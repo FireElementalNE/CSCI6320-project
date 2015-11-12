@@ -5,9 +5,8 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
-
 #include <iostream>
-
+#define BUF_LEN 4096
 #define MAXCONNECTIONS 5
 using namespace std;
 
@@ -16,16 +15,38 @@ using namespace std;
 int main(int argc, char **argv) {
   struct sockaddr_in server_addr,client_addr;
   socklen_t clientlen = sizeof(client_addr);
-  int port, reuse;
+  int reuse;
   int server, client;
   char * buf;
-  int buflen;
   int nread;
-  if(argc != 2) {
-    cerr << "ERROR: port not provided." << endl;
-    exit(EXIT_FAILURE);
+  string host = "localhost";
+  int port = 5556; 
+  bool debug = false;
+  int c;
+  while ((c = getopt(argc, argv, "dhp:H:")) != -1) {
+    switch (c) {
+      case 'h':
+        cout << "usage: " << argv[0] << " [-d] [-h] [-p port] [-H hostname]" << endl;
+        cout << "\t-h help (show this menu)" << endl;
+        cout << "\t-d Debug flag" << endl;
+        cout << "\t-H hostname to of sever to (DEFAULT: 'localhost')" << endl;
+        cout << "\t-p port to listen on to (DEFAULT: 5556)" << endl;
+        exit(EXIT_SUCCESS);
+      break;
+        case 'p':
+        port = atoi(optarg);
+      break;
+        case 'd':
+        debug = true;
+      break;
+        case 'H':
+        host = optarg;
+      break;
+    }
   }
-  port = atoi(argv[1]);
+  if(debug) {
+    cout << "DEBUG: listning from " << host << " on port " << port << endl;
+  }
 
   // setup socket address structure
   memset(&server_addr, 0, sizeof(server_addr));
@@ -56,23 +77,27 @@ int main(int argc, char **argv) {
     exit(EXIT_FAILURE);
   }
   // allocate buffer
-  buflen = 1024;
-  buf = new char[buflen+1];
+  buf = new char[BUF_LEN + 1];
   // accept clients
   while ((client = accept(server,(struct sockaddr *)&client_addr,&clientlen)) > 0) {
-    // loop to handle all requests
     while (1) {
-      // read a request
-      memset(buf, 0, buflen);
-      nread = recv(client, buf, buflen, 0);
+      memset(buf, 0, BUF_LEN);
+      nread = recv(client, buf, BUF_LEN, 0);
+      if(debug) {
+        char str[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &(client_addr.sin_addr), str, INET_ADDRSTRLEN);
+        cout << "Got a connection from " << str << endl;
+        cout << "DEBUG: got '" << buf << "' from client." << endl;
+      }
       if (nread == 0)
-	break;
-      cout << "Got a connection from " << client_addr.sin_addr.s_addr << endl;
+        break;
       // send a response
-      send(client, buf, nread, 0);
+      send(client, buf, BUF_LEN, 0);
+      if(debug) {
+      cout << "DEBUG: sent '" << buf << "' to client." << endl;
     }
-    close(client);
-  }
-    
-  close(server);
+   }
+   close(client);
+ }
+ close(server);
 }
