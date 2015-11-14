@@ -10,7 +10,6 @@
 #include <iostream>
 #define BUF_LEN 4096
 using namespace std;
-
 // Modified from:
 // https://github.com/zappala/socket-programming-examples-c
 void print_usage(char * argv0);
