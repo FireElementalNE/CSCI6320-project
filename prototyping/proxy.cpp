@@ -171,7 +171,7 @@ void print_usage(char * argv0) {
 	cout << "\t-h help (show this menu)" << endl;
 	cout << "\t-d Debug flag" << endl;
 	cout << "\t-t hostname of proxy (DEFAULT: 'localhost')" << endl;
-	cout << "\t-T hostname of client (DEFAULT: 'localhost')" << endl;
+	cout << "\t-T hostname of server (DEFAULT: 'localhost')" << endl;
 	cout << "\t-p port for proxy (DEFAULT: 5556)" << endl;
 	cout << "\t-P port for server (DEFAULT: 5555)" << endl;
 }

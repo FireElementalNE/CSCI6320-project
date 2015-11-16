@@ -18,7 +18,7 @@ int main(int argc, char **argv) {
 	int port = 5555; 
 	bool debug = false;
 	int c;
-	while ((c = getopt(argc, argv, "dhp:H:")) != -1) {
+	while ((c = getopt(argc, argv, "dhp:T:")) != -1) {
 		switch (c) {
 		case 'h':
 			print_usage(argv[0]);
@@ -29,7 +29,7 @@ int main(int argc, char **argv) {
 		case 'd':
 			debug = true;
 			break;
-		case 'H':
+		case 'T':
 			host = optarg;
 			break;
 		}
@@ -90,9 +90,9 @@ int main(int argc, char **argv) {
 	close(server);
 }
 void print_usage(char * argv0) {
-	cout << "usage: " << argv0 << " [-d] [-h] [-p port] [-H hostname] -m msg" << endl;
+	cout << "usage: " << argv0 << " [-d] [-h] [-p port] [-T hostname] -m msg" << endl;
 	cout << "\t-h help (show this menu)" << endl;
 	cout << "\t-d Debug flag" << endl;
-	cout << "\t-H hostname to connect to (DEFAULT: 'localhost')" << endl;
+	cout << "\t-T hostname to connect to (DEFAULT: 'localhost')" << endl;
 	cout << "\t-p port to connect to (DEFAULT: 5555)" << endl;
 }

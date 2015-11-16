@@ -22,7 +22,7 @@ int main(int argc, char **argv) {
   int port = 5556; 
   bool debug = false;
   int c;
-  while ((c = getopt(argc, argv, "dhp:H:")) != -1) {
+  while ((c = getopt(argc, argv, "dhp:t:")) != -1) {
     switch (c) {
       case 'h':
         print_usage(argv[0]);
