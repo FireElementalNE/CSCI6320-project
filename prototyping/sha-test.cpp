@@ -7,6 +7,8 @@
 #include <sstream>
 #define MAX_SIZE 256
 using namespace std; 
+// https://memset.wordpress.com/2010/10/06/using-sha1-function/
+// http://stackoverflow.com/questions/11765522/how-do-i-write-this-in-cout-c
 string print_hex(unsigned char *bs, unsigned int n) {
     string ret_val = "";
     for (int i = 0; i < n; i++) {
