@@ -30,18 +30,18 @@ Getting started
     * **NOTE: unless you have XP in Vim or Emacs I would suggest sublime text  
  as it is the most intuative.**
 
-4) clone this repository:
+4. clone this repository:
   ```
   cd ~/Desktop
   git clone https://github.com/FireElementalNE/CSCI6320-project.git
   ```
 
-5 Build the project:  
+5. Build the project:  
   ```
   cd ~/Desktop/CSCI6320-project/prototyping
   make
   ```
-5. test it out in 3 separate terminal windows:
+6. test it out in 3 separate terminal windows:
   1. server window:  
     ```shell
     ./client -d
