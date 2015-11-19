@@ -8,7 +8,7 @@ Protocol
 5. if MAC valid bank sends request for account information:  
   Account information consists of:
   * account number
-  *  sha512sum (see sha-test.cpp)
+  *  sha512sum (see [sha-test.cpp](https://github.com/FireElementalNE/CSCI6320-project/blob/master/prototyping/sha-test.cpp))
 7. Bank sends OK/NOT OK
      -- if valid bank locks account from other login attempts
 8. if OK, client sends transaction
