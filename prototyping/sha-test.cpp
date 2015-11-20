@@ -27,7 +27,7 @@ int main(int argc, char ** argv) {
     unsigned char temp[SHA512_DIGEST_LENGTH];
  	strncpy(tmp, argv[1], MAX_SIZE);
     memset(temp, 0x0, SHA512_DIGEST_LENGTH);
-    SHA512((unsigned char *)argv[1], strlen(argv[1]), temp);
+    SHA512((unsigned char *)tmp, strlen(tmp), temp);
     cout << "SHA512 of " << tmp << " is " << print_hex(temp, sizeof(temp)) << endl;
     return 0;
 }
