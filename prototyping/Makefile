@@ -4,9 +4,9 @@ all: server proxy client test-ssl sha-test
 sockets: server proxy client
 crypto: test-ssl sha-test
 client: client.o client_main.cpp
-	$(CC) -o client client_main.cpp client.o $(CFLAGS)
+	$(CC) -o client client_main.cpp client.o -lssl -lcrypto $(CFLAGS)
 server: server.o server_main.cpp
-	$(CC) -o server server_main.cpp server.o $(CFLAGS)
+	$(CC) -o server server_main.cpp server.o -lssl -lcrypto $(CFLAGS)
 proxy: proxy.cpp
 	$(CC) -o proxy proxy.cpp $(CFLAGS)
 test-ssl: test-ssl.cpp

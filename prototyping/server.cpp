@@ -6,15 +6,25 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <iostream>
+#include <fstream>
+#include <openssl/pem.h>
+#include <openssl/ssl.h>
+#include <openssl/rsa.h>
+#include <openssl/evp.h>
+#include <openssl/bio.h>
+#include <openssl/err.h>
 #include "server.h"
 #define BUF_LEN 4096
 #define MAXCONNECTIONS 5
-CryptoServer::CryptoServer(int p1, string h1, bool d1) {
+CryptoServer::CryptoServer(int p1, string h1, bool d1, string filename_pub, string filename_priv) {
 	port = p1;
 	host = h1;
 	debug = d1;
 	reuse = 1;
 	clientlen = sizeof(client_addr);
+  pub_file = filename_pub;
+  priv_file = filename_priv;
+  is_enc = false;
 }
 bool CryptoServer::setup_connection() {
 	if(debug) {
@@ -56,48 +66,118 @@ bool CryptoServer::start_server() {
 	}
 	while (1) {
 		client = accept(server,(struct sockaddr *)&client_addr, &clientlen);
-    	if(client < 0) {
-      		perror("accept");
-      		exit(EXIT_FAILURE);
-    	}
-    	if(debug) {
-      		char str[INET_ADDRSTRLEN];
-      		inet_ntop(AF_INET, &(client_addr.sin_addr), str, INET_ADDRSTRLEN);
-      		cout << "Got a connection from " << str << endl;
-    	}
-    	int pid = fork();
-    	if(pid < 0) {
-      		perror("fork");
-      		exit(EXIT_FAILURE);
-    	}
-    	if(pid == 0) {
-      		close(server);
-      		process_connection(client);
-      		exit(EXIT_SUCCESS);
-      	}
-      	else {
-      		close(client);
-      	}
+  	if(client < 0) {
+    		perror("accept");
+    		exit(EXIT_FAILURE);
+  	}
+  	if(debug) {
+    		char str[INET_ADDRSTRLEN];
+    		inet_ntop(AF_INET, &(client_addr.sin_addr), str, INET_ADDRSTRLEN);
+    		cout << "Got a connection from " << str << endl;
+  	}
+  	int pid = fork();
+  	if(pid < 0) {
+    		perror("fork");
+    		exit(EXIT_FAILURE);
+  	}
+  	if(pid == 0) {
+    		close(server);
+    		process_connection(client);
+    		exit(EXIT_SUCCESS);
+  	}
+  	else {
+  		close(client);
+  	}
 	}
 }
 void CryptoServer::process_connection(int sock) {
 	char * buf = new char[BUF_LEN + 1];
-  	while(1) {
-    	memset(buf, 0, BUF_LEN);
-    	int nread = recv(sock, buf, BUF_LEN, 0);
-    	if(nread == 0) {
-      		cout << "GOT a read length of 0, closing socket" << endl;
-      		close(sock);
-      		return;
-    	}
-    	else {
-      		if(debug) {
-        		cout << "DEBUG: got '" << buf << "' from client." << endl;
-      		}
-    	}
-    	send(sock, buf, BUF_LEN, 0);
-    	if(debug) {
-      		cout << "DEBUG: sent '" << buf << "' to client." << endl;
-    	}
+	while(1) {
+  	memset(buf, 0, BUF_LEN);
+  	int nread = recv(sock, buf, BUF_LEN, 0);
+    /*if(is_enc) {
+      buf = decr_msg(buf);
+    }*/
+  	if(nread == 0) {
+    		cout << "GOT a read length of 0, closing socket" << endl;
+    		close(sock);
+    		return;
+  	}
+  	else {
+    		if(debug) {
+      		cout << "DEBUG: got '" << buf << "' from client." << endl;
+    		}
+  	}
+    if(strcmp(buf, "PUBKEY") == 0) {
+      is_enc = true;
+      send_public_key(sock);
+      char * buf_encr = new char[BUF_LEN + 1];
+      int nread = recv(sock, buf_encr, BUF_LEN, 0);
+      cout << "got encr: " << buf_encr << endl;
+      string to_send = decr_msg((unsigned char *)buf_encr, strlen(buf_encr));
+      send(sock, to_send.c_str(), BUF_LEN, 0);
     }
+    else {
+      send(sock, buf, BUF_LEN, 0);
+      if(debug) {
+        cout << "DEBUG: sent '" << buf << "' to client." << endl;
+      }  
+    }
+  }
+}
+string CryptoServer::read_priv_key() {
+  ifstream priv;
+  priv.open(priv_file.c_str());
+  if(!priv.is_open()) {
+    cerr << "could not open priv key " << pub_file << endl;
+    return "";
+  }
+  string str((istreambuf_iterator<char>(priv)), istreambuf_iterator<char>());
+  priv.close();
+  return str;
+}
+RSA * CryptoServer::create_rsa_priv(char * key) {
+  RSA * rsa = NULL;
+  BIO * keybio;
+  keybio = BIO_new_mem_buf(key, -1);
+  if (keybio == NULL) {
+    cerr << "Failed to create key BIO" << endl;
+    return NULL;
+  }
+  rsa = PEM_read_bio_RSAPrivateKey(keybio, &rsa,NULL, NULL);
+  return rsa;
+}
+int CryptoServer::private_decrypt(RSA * rsa, unsigned char * enc_data, int data_len,unsigned char * key, unsigned char *decrypted) {
+  int padding = RSA_PKCS1_PADDING;
+  int  result = RSA_private_decrypt(data_len,enc_data,decrypted,rsa,padding);
+  return result;
+}
+string CryptoServer::decr_msg(unsigned char * msg, int msg_len) {
+  string priv_key = read_priv_key();
+  const char * key_tmp = new char[priv_key.size()];
+  key_tmp = priv_key.c_str();
+  char * key = new char[priv_key.size()];
+  strncpy(key, key_tmp, priv_key.size());
+  char * enc = new char[BUF_LEN];
+  RSA * rsa = create_rsa_priv(key);
+  char * decr = new char[BUF_LEN];
+  int result = private_decrypt(rsa, msg, msg_len, (unsigned char*)key, (unsigned char*)decr);
+  if(result == -1) {
+    cerr << "Private Decrypt failed " << endl;
+  }
+  else {
+    cout << "DECR:" << endl << decr << endl;
+  }
+  return (string)decr;
+}
+void CryptoServer::send_public_key(int sock) {
+  ifstream pub;
+  pub.open(pub_file.c_str());
+  if(!pub.is_open()) {
+    cerr << "could not open pub key " << pub_file << endl;
+    close(sock);
+  }
+  string str((istreambuf_iterator<char>(pub)), istreambuf_iterator<char>());
+  pub.close();
+  send(sock, str.c_str(), BUF_LEN, 0);
 }

@@ -25,7 +25,6 @@ int main(int argc, char ** argv) {
 	}
 	CryptoClient client = CryptoClient(port, host, debug);
 	bool test = client.init_connection();
-	cout << "got here" << endl;
 	if(!test) {
 		cerr << "what?" << endl;
 	}
