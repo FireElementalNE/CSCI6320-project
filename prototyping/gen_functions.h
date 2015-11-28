@@ -3,7 +3,7 @@
 #include <iomanip>
 #include <sstream>
 using namespace std;
-int ENC_LEN = 256;
+int ENC_LEN = 256; // length of encr msg
 char * str_to_unsigned_char_ptr(string s) {
 	const char * tmp = new char[s.size()];
    	tmp = s.c_str();
