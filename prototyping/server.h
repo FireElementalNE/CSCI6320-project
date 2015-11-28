@@ -1,17 +1,8 @@
 #include <arpa/inet.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/socket.h>
 #include <unistd.h>
 #include <iostream>
-#include <openssl/pem.h>
-#include <openssl/ssl.h>
 #include <openssl/rsa.h>
-#include <openssl/evp.h>
-#include <openssl/bio.h>
-#include <openssl/err.h>
 using namespace std;
 class CryptoServer {
 private:
@@ -31,7 +22,7 @@ private:
   	string read_priv_key();
   	RSA * create_rsa_priv(char * key);
   	int private_decrypt(RSA * rsa, unsigned char * enc_data,int data_len,unsigned char * key, unsigned char *decrypted);
-  	string decr_msg(unsigned char * msg, int msg_len);
+  	string decr_msg(unsigned char * msg);
 public:
 	CryptoServer(int p1, string h1, bool d1, string filename_pub, string filename_priv);
 	bool start_server();

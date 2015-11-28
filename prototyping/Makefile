@@ -11,8 +11,7 @@ proxy: proxy.cpp
 	$(CC) -o proxy proxy.cpp $(CFLAGS)
 test-ssl: test-ssl.cpp
 	$(CC) -o test-ssl test-ssl.cpp -lssl -lcrypto $(CLFAGS)
-sha-test: sha-test.cpp
+sha-test: sha-test.cpp 
 	$(CC) -o sha-test sha-test.cpp -lssl -lcrypto $(CLFAGS)
-
 clean:
 	rm -f server client proxy test-ssl sha-test *.o

@@ -1,4 +1,5 @@
 #include <iostream>
+#include <unistd.h>
 #include "client.h"
 using namespace std;
 void print_usage(char * argv0);
@@ -30,6 +31,7 @@ int main(int argc, char ** argv) {
 	}
 	// allocate buffer
   	// read a line from standard input
+  	client.send_recv_msg("PUBKEY");
 	string line;
 	while (getline(cin,line)) {
 		string resp = client.send_recv_msg(line);

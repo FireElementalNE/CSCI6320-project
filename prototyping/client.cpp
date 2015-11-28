@@ -7,16 +7,16 @@
 #include <arpa/inet.h>
 #include <errno.h>
 #include <netdb.h>
-#include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include <fstream>
 #include <iostream>
 #include "client.h"
+#include "gen_functions.h"
 #define BUF_LEN 4096
 using namespace std;
+extern char * str_to_unsigned_char_ptr(string s);
 CryptoClient::CryptoClient(int p1, string h1, bool d1) {
 	port = p1;
 	host = h1;
@@ -63,10 +63,10 @@ string CryptoClient::send_recv_msg(string msg) {
 		recv(server,buf,BUF_LEN,0);
 		if(msg == "PUBKEY") {
 			server_pub_key = (string)buf;
-			char * msg = new char[19];
+			char * msg = new char[38];
 			char * decr = new char[BUF_LEN + 1];
-			strncpy(msg, "HELLO WORLD (ENCR)!", 19);
-			send_encr_msg((unsigned char*)msg, 19);
+			strncpy(msg, "HELLO WORLD (ENCR)!HELLO WORLD (ENCR)!", 38);
+			send_encr_msg((unsigned char*)msg, 38);
 			recv(server,decr,BUF_LEN,0);
 			return (string)decr;
 		}
@@ -105,16 +105,17 @@ int public_encrypt(RSA * rsa, unsigned char * data, int data_len, unsigned char 
 
 void CryptoClient::send_encr_msg(unsigned char * msg, int msg_len) {
 	if(server_pub_key != "BLANK") {
-		const char * key_tmp = new char[server_pub_key.size()];
-	    key_tmp = server_pub_key.c_str();
-	    char * key = new char[server_pub_key.size()];
-	    strncpy(key, key_tmp, server_pub_key.size());
+		char * key = new char[BUF_LEN];
+		key = str_to_unsigned_char_ptr(server_pub_key);
 		RSA * rsa = create_rsa_pubkey(key);
 		char * enc = new char[BUF_LEN];
     	int result = public_encrypt(rsa, msg, msg_len, (unsigned char*)key, (unsigned char*)enc);
     	if(result == -1) {
     		cerr << "Public Encrypt failed " << endl;
     		exit(0);
+		}
+		if(debug) {
+			cout << "CryptoClient::send_encr_msg: encr size ==> " << result << endl;
 		}
 		send(server, enc, BUF_LEN, 0);
 	}

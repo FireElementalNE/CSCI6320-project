@@ -1,8 +1,5 @@
 #include <arpa/inet.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <iostream>
@@ -14,6 +11,7 @@
 #include <openssl/bio.h>
 #include <openssl/err.h>
 #include "server.h"
+#include "gen_functions.h"
 #define BUF_LEN 4096
 #define MAXCONNECTIONS 5
 CryptoServer::CryptoServer(int p1, string h1, bool d1, string filename_pub, string filename_priv) {
@@ -114,7 +112,7 @@ void CryptoServer::process_connection(int sock) {
       char * buf_encr = new char[BUF_LEN + 1];
       int nread = recv(sock, buf_encr, BUF_LEN, 0);
       cout << "got encr: " << buf_encr << endl;
-      string to_send = decr_msg((unsigned char *)buf_encr, strlen(buf_encr));
+      string to_send = decr_msg((unsigned char *)buf_encr);
       send(sock, to_send.c_str(), BUF_LEN, 0);
     }
     else {
@@ -148,20 +146,20 @@ RSA * CryptoServer::create_rsa_priv(char * key) {
   return rsa;
 }
 int CryptoServer::private_decrypt(RSA * rsa, unsigned char * enc_data, int data_len,unsigned char * key, unsigned char *decrypted) {
+  if(debug) {
+    cout << "CryptoServer::private_decrypt: Got a msg of len " << "fef" << endl;
+  }
   int padding = RSA_PKCS1_PADDING;
   int  result = RSA_private_decrypt(data_len,enc_data,decrypted,rsa,padding);
   return result;
 }
-string CryptoServer::decr_msg(unsigned char * msg, int msg_len) {
+string CryptoServer::decr_msg(unsigned char * msg) {
   string priv_key = read_priv_key();
-  const char * key_tmp = new char[priv_key.size()];
-  key_tmp = priv_key.c_str();
-  char * key = new char[priv_key.size()];
-  strncpy(key, key_tmp, priv_key.size());
-  char * enc = new char[BUF_LEN];
+  char * key = new char[BUF_LEN];
+  key = str_to_unsigned_char_ptr(priv_key);
   RSA * rsa = create_rsa_priv(key);
   char * decr = new char[BUF_LEN];
-  int result = private_decrypt(rsa, msg, msg_len, (unsigned char*)key, (unsigned char*)decr);
+  int result = private_decrypt(rsa, msg, ENC_LEN, (unsigned char*)key, (unsigned char*)decr);
   if(result == -1) {
     cerr << "Private Decrypt failed " << endl;
   }
