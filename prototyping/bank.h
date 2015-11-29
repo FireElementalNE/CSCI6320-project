@@ -3,13 +3,12 @@
 #include <iostream>
 #include <vector>
 #include "account.h"
-#include "server.h"
 using namespace std;
-class bank {
+class Bank {
 private:
 	vector <account> bank_accounts;
-	CryptoServer server;
 public:
-	bank(string filename, int p1, string h1, bool d1, string filename_pub, string filename_priv);
+	Bank() {}
+	Bank(string filename);
 };
 #endif /* BANK_H */

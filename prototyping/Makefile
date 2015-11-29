@@ -2,15 +2,13 @@ CC=g++
 CFLAGS=-lssl -lcrypto -g -Wall -std=c++11
 OBJ=server.o client.o crypto.o bank.o gen_functions.o account.o
 all: server proxy client bank
-sockets: server proxy client bank
+sockets: server proxy client
 client: client_main.cpp server.o client.o crypto.o bank.o gen_functions.o account.o
 	$(CC) -o client client_main.cpp $(OBJ) $(CFLAGS)
 server: server_main.cpp server.o client.o crypto.o bank.o gen_functions.o account.o
 	$(CC) -o server server_main.cpp $(OBJ) $(CFLAGS)
 proxy: proxy.cpp
 	$(CC) -o proxy proxy.cpp $(CFLAGS)
-bank: bank_test.cpp server.o client.o crypto.o bank.o gen_functions.o account.o 
-	$(CC) -o bank_test bank_test.cpp $(OBJ) $(CFLAGS)
 server.o:
 	$(CC) -c -o server.o server.cpp $(CFLAGS)
 client.o:
@@ -24,4 +22,4 @@ bank.o:
 account.o: account.cpp
 	$(CC) -c -o account.o account.cpp $(CFLAGS)
 clean:
-	rm -f server client proxy test-ssl sha-test bank_test *.o
+	rm -f server client proxy test-ssl sha-test *.o

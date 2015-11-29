@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <iostream>
 #include <openssl/rsa.h>
+#include "bank.h"
 using namespace std;
 class CryptoServer {
 private:
@@ -24,9 +25,11 @@ private:
 	void process_connection(int sock);
 	void send_public_key(int sock);
 	string setup_keys();
+	Bank bank;
 public:
+	void send_response(string response);
 	CryptoServer() {}
-	CryptoServer(int p1, string h1, bool d1, string filename_pub, string filename_priv);
+	CryptoServer(int p1, string h1, bool d1, string filename_pub, string filename_priv, string accounts_filename);
 	bool start_server();
 };
 #endif /* SERVER_H */
