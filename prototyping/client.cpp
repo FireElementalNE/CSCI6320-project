@@ -14,13 +14,16 @@
 #include <iostream>
 #include "client.h"
 #include "gen_functions.h"
+#include "crypto.h"
 #define BUF_LEN 4096
+#define ENC_LEN 256 // length of encr msg
 using namespace std;
-extern char * str_to_unsigned_char_ptr(string s);
-CryptoClient::CryptoClient(int p1, string h1, bool d1) {
+CryptoClient::CryptoClient(int p1, string h1, bool d1, string filename_pub, string filename_priv) {
 	port = p1;
 	host = h1;
 	debug = d1;
+	pub_key = read_keyfile(filename_pub);
+  	priv_key = read_keyfile(filename_priv);
 	server_pub_key = "BLANK";
 }
 bool CryptoClient::init_connection() {
@@ -48,75 +51,53 @@ bool CryptoClient::init_connection() {
 		perror("connect");
 		return false;
 	}
+	get_public_key();
+
 	return true;
 }
 string CryptoClient::send_recv_msg(string msg) {
 	char * buf = new char[BUF_LEN + 1];
 	if(msg.size() > 0) {
 	    // write the data to the server
-		send(server, msg.c_str(), msg.length(), 0);
+	    char * new_msg = new char[msg.size()];
+	    char * enc_msg = new char[ENC_LEN];
+	    strncpy(new_msg, msg.c_str(), msg.size());
+	    enc_msg = encr_msg((unsigned char *) new_msg, msg.size(), server_pub_key);
+		send(server, enc_msg, BUF_LEN, 0);
 		if(debug) {
-			cout << "DEBUG: sent '" << msg << "' to server." << endl;
+			string hex_tmp = raw_to_hex((unsigned char *)enc_msg, ENC_LEN);
+			cout << "DEBUG: sent '" << hex_tmp << "' to server." << endl;
 		}
 	    // read the response
 		memset(buf,0,BUF_LEN);
-		recv(server,buf,BUF_LEN,0);
-		if(msg == "PUBKEY") {
-			server_pub_key = (string)buf;
-			char * msg = new char[38];
-			char * decr = new char[BUF_LEN + 1];
-			strncpy(msg, "HELLO WORLD (ENCR)!HELLO WORLD (ENCR)!", 38);
-			send_encr_msg((unsigned char*)msg, 38);
-			recv(server,decr,BUF_LEN,0);
-			return (string)decr;
+		recv(server, buf, BUF_LEN, 0);
+		string received = decr_msg((unsigned char*) buf, priv_key);
+		if(received == "") {
+			cerr << "ERROR: decryption failed. Sorry." << endl;
 		}
 	    // print the response
 		if(debug) {
-			cout << "DEBUG: got '" << buf << "' from server." << endl;
+			string hex_tmp = raw_to_hex((unsigned char *)buf, ENC_LEN);
+			cout << "DEBUG: got '" << hex_tmp << "' from server." << endl;
 		}
-		return (string)buf;
+		return received;
 	}
 	else {
 		cerr << "ERROR: empty line." << endl;
 		return "";
 	}
 }
+
+void CryptoClient::get_public_key() {
+	char * buf = new char[BUF_LEN];
+	string msg = "PUBKEY";
+	send(server, msg.c_str(), msg.length(), 0);
+	recv(server, buf, BUF_LEN, 0);
+	server_pub_key = (string)buf;
+	cout << "Secure Connection Established." << endl;
+	send(server, pub_key.c_str(), BUF_LEN, 0);
+	
+}
 void CryptoClient::close_connection() {
 	close(server);
-}
-
-RSA * CryptoClient::create_rsa_pubkey(char * key) {
-	RSA * rsa = NULL;
-    BIO * keybio;
-    keybio = BIO_new_mem_buf(key, -1);
-    if (keybio == NULL) {
-        cerr << "Failed to create key BIO" << endl;
-        return NULL;
-    }
-    rsa = PEM_read_bio_RSA_PUBKEY(keybio, &rsa, NULL, NULL);
-    return rsa;
-}
-
-int public_encrypt(RSA * rsa, unsigned char * data, int data_len, unsigned char * key, unsigned char * encrypted) {
-	int padding = RSA_PKCS1_PADDING;
-    int result = RSA_public_encrypt(data_len, data, encrypted, rsa, padding);
-    return result;
-}
-
-void CryptoClient::send_encr_msg(unsigned char * msg, int msg_len) {
-	if(server_pub_key != "BLANK") {
-		char * key = new char[BUF_LEN];
-		key = str_to_unsigned_char_ptr(server_pub_key);
-		RSA * rsa = create_rsa_pubkey(key);
-		char * enc = new char[BUF_LEN];
-    	int result = public_encrypt(rsa, msg, msg_len, (unsigned char*)key, (unsigned char*)enc);
-    	if(result == -1) {
-    		cerr << "Public Encrypt failed " << endl;
-    		exit(0);
-		}
-		if(debug) {
-			cout << "CryptoClient::send_encr_msg: encr size ==> " << result << endl;
-		}
-		send(server, enc, BUF_LEN, 0);
-	}
 }
