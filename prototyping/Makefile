@@ -1,7 +1,7 @@
 CC=g++
 CFLAGS=-lssl -lcrypto -g -Wall -std=c++11
 OBJ=server.o client.o crypto.o bank.o gen_functions.o account.o
-all: server proxy client bank
+all: server proxy client
 sockets: server proxy client
 client: client_main.cpp server.o client.o crypto.o bank.o gen_functions.o account.o
 	$(CC) -o client client_main.cpp $(OBJ) $(CFLAGS)
