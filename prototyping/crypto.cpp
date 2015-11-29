@@ -10,6 +10,7 @@
 #include <openssl/evp.h>
 #include <openssl/bio.h>
 #include <openssl/err.h>
+#include <openssl/sha.h>
 #define BUF_LEN 4096
 #define ENC_LEN 256 // length of encr msg
 using namespace std;
@@ -68,4 +69,15 @@ char * encr_msg(unsigned char * msg, int msg_len, string pub_key) {
 		exit(EXIT_FAILURE);
 	}
 	return enc;
+}
+char * hash_pin(int pin) {
+    string pin_str = to_string(pin);
+    char * tmp = new char[pin_str.size()];
+    unsigned char temp[SHA_DIGEST_LENGTH];
+    strncpy(tmp, (char*)pin_str.c_str(), pin_str.size());
+    memset(temp, 0x0, SHA_DIGEST_LENGTH);
+    SHA1((unsigned char *)tmp, strlen(tmp), temp);
+    char * out = new char[SHA_DIGEST_LENGTH];
+    strncpy(out, (char*)temp, SHA_DIGEST_LENGTH);
+    return out;
 }

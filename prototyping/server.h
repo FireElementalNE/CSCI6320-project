@@ -1,3 +1,5 @@
+#ifndef SERVER_H
+#define SERVER_H
 #include <arpa/inet.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -6,7 +8,7 @@
 using namespace std;
 class CryptoServer {
 private:
-  RSA * rsa;
+	RSA * rsa;
 	int port;
 	string host;
 	struct sockaddr_in server_addr, client_addr;
@@ -14,15 +16,17 @@ private:
 	int reuse;
 	int server, client;
 	bool debug;
-  string clinet_pub_key;
+	string clinet_pub_key;
 	string pub_key;
 	string priv_key;
-  bool is_approved;
+	bool is_approved;
 	bool setup_connection();
 	void process_connection(int sock);
 	void send_public_key(int sock);
 	string setup_keys();
 public:
+	CryptoServer() {}
 	CryptoServer(int p1, string h1, bool d1, string filename_pub, string filename_priv);
 	bool start_server();
 };
+#endif /* SERVER_H */

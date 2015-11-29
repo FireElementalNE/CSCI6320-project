@@ -15,7 +15,7 @@ char * str_to_char_ptr(string s) {
 }
 string raw_to_hex(unsigned char * bs, unsigned int n) {
     string ret_val = "";
-    for (int i = 0; i < n; i++) {
+    for (unsigned int i = 0; i < n; i++) {
         stringstream ss;
         ss << hex << static_cast<int>(bs[i]);
         ret_val += ss.str();

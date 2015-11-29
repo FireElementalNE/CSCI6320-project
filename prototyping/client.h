@@ -1,3 +1,5 @@
+#ifndef CLIENT_H
+#define CLIENT_H
 #include <netdb.h>
 #include <stdlib.h>
 #include <iostream>
@@ -26,3 +28,4 @@ public:
 	void close_connection();
 	// void send_encr_msg(unsigned char * msg, int msg_len);
 };
+#endif /* CLIENT_H */
