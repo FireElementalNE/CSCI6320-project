@@ -11,13 +11,20 @@ account::account(int an, char * p, int b, bool lock) {
 	pin_hash = hash_pin(p);
 	balance = b;
 	locked = lock;
-	// cout << account_num << " " << raw_to_hex((unsigned char*)pin_hash, SHA_DIGEST_LENGTH) << endl;
+	cout << account_num << " " << raw_to_hex((unsigned char*)pin_hash, SHA_DIGEST_LENGTH) << endl;
 }
 bool account::check_creds(int an, char * p_hash) {
 	if(account_num != an) {
+		cout << "account mismatch" << endl;
+		cout << "\t\'" << account_num << "\'" << endl;
+		cout << "\t\'" << an << "\'" << endl;
 		return false;
 	}
 	if(strcmp(p_hash,pin_hash) != 0) {
+		cout << "pin mismatch" << endl;
+		cout << "\t\'" << raw_to_hex((unsigned char*)pin_hash, SHA_DIGEST_LENGTH) << "\'" << endl;
+		cout << "\t\'" << raw_to_hex((unsigned char*)p_hash, SHA_DIGEST_LENGTH) << "\'" << endl;
+		cout << strcmp(p_hash,pin_hash) << endl;
 		return false;
 	}
 	return true;
