@@ -12,14 +12,17 @@ private:
 	bool connected;
 	struct hostent * hostEntry;
 	struct sockaddr_in server_addr;
+	string priv_key;
+	string pub_key;
 	int server;
 	string server_pub_key;
+	void get_public_key();
+	// string decr_msg(unsigned char * msg);
 public:
-	RSA * create_rsa_pubkey(char * key);
 	bool debug;
 	bool init_connection();
-	CryptoClient(int p1, string h1, bool d1);
+	CryptoClient(int p1, string h1, bool d1, string filename_pub, string filename_priv);
 	string send_recv_msg(string msg);
 	void close_connection();
-	void send_encr_msg(unsigned char * msg, int msg_len);
+	// void send_encr_msg(unsigned char * msg, int msg_len);
 };

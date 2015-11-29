@@ -6,8 +6,8 @@ int main(int argc, char ** argv) {
 	string host = "localhost";
 	int port = 5556; 
 	bool debug = false;
-	string priv_key = "keys/private.pem";
-	string pub_key = "keys/public.pem";
+	string priv_key = "keys/private_server.pem";
+	string pub_key = "keys/public_server.pem";
 	int c;
 	while ((c = getopt(argc, argv, "dhp:t:k:K:")) != -1) {
 		switch (c) {
@@ -41,6 +41,6 @@ void print_usage(char * argv0) {
   cout << "\t-d Debug flag" << endl;
   cout << "\t-H hostname to of sever to (DEFAULT: 'localhost')" << endl;
   cout << "\t-p port to listen on to (DEFAULT: 5556)" << endl;
-  cout << "\t-k private key file (DEFAULT: keys/private.pem)" << endl;
-  cout << "\t-K public key file (DEFAULT: keys/public.pem)" << endl;
+  cout << "\t-k private key file (DEFAULT: keys/private_server.pem)" << endl;
+  cout << "\t-K public key file (DEFAULT: keys/public_server.pem)" << endl;
 }

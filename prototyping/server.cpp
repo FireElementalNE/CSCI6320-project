@@ -12,17 +12,19 @@
 #include <openssl/err.h>
 #include "server.h"
 #include "gen_functions.h"
+#include "crypto.h"
 #define BUF_LEN 4096
 #define MAXCONNECTIONS 5
+#define ENC_LEN 256 // length of encr msg
 CryptoServer::CryptoServer(int p1, string h1, bool d1, string filename_pub, string filename_priv) {
 	port = p1;
 	host = h1;
 	debug = d1;
 	reuse = 1;
+  is_approved = false;
 	clientlen = sizeof(client_addr);
-  pub_file = filename_pub;
-  priv_file = filename_priv;
-  is_enc = false;
+  pub_key = read_keyfile(filename_pub);
+  priv_key = read_keyfile(filename_priv);
 }
 bool CryptoServer::setup_connection() {
 	if(debug) {
@@ -93,89 +95,49 @@ void CryptoServer::process_connection(int sock) {
 	while(1) {
   	memset(buf, 0, BUF_LEN);
   	int nread = recv(sock, buf, BUF_LEN, 0);
-    /*if(is_enc) {
-      buf = decr_msg(buf);
-    }*/
   	if(nread == 0) {
     		cout << "GOT a read length of 0, closing socket" << endl;
     		close(sock);
     		return;
   	}
-  	else {
-    		if(debug) {
-      		cout << "DEBUG: got '" << buf << "' from client." << endl;
-    		}
-  	}
-    if(strcmp(buf, "PUBKEY") == 0) {
-      is_enc = true;
-      send_public_key(sock);
-      char * buf_encr = new char[BUF_LEN + 1];
-      int nread = recv(sock, buf_encr, BUF_LEN, 0);
-      cout << "got encr: " << buf_encr << endl;
-      string to_send = decr_msg((unsigned char *)buf_encr);
-      send(sock, to_send.c_str(), BUF_LEN, 0);
+    if(strcmp(buf, "PUBKEY") == 0 && !is_approved) {
+      // assume its a good key for now,
+      //  MAC stuff will go here, we will have a list
+      //  of public keys that are associated with good
+      //  private keys. Will need Mersenne twister.
+      char * buf_key = new char[BUF_LEN];
+      send(sock, pub_key.c_str(), BUF_LEN, 0);
+      recv(sock, buf_key, BUF_LEN, 0);
+      clinet_pub_key = (string)buf_key;
+      is_approved = true;
+      cout << "Secure Connection Established." << endl;
     }
-    else {
-      send(sock, buf, BUF_LEN, 0);
+    else if(is_approved){
+      string msg = decr_msg((unsigned char *)buf, priv_key);
+      if(msg == "") {
+        cerr << "ERROR: decryption failed. Sorry." << endl;
+        close(sock);
+        exit(EXIT_FAILURE);
+      }
       if(debug) {
-        cout << "DEBUG: sent '" << buf << "' to client." << endl;
+        string hex_tmp = raw_to_hex((unsigned char *)buf, ENC_LEN);
+        cout << "DEBUG: got '" << hex_tmp << "' from client." << endl;
+      }
+      char * tmp = new char[msg.size()];
+      char * enc_msg = new char[ENC_LEN];
+      strncpy(tmp, msg.c_str(), msg.size());
+      enc_msg = encr_msg((unsigned char*)tmp, msg.size(), clinet_pub_key);
+      send(sock, enc_msg, BUF_LEN, 0);
+      if(debug) {
+        string hex_tmp = raw_to_hex((unsigned char *)enc_msg, ENC_LEN);
+        cout << "DEBUG: sent '" << hex_tmp << "' to client." << endl;
       }  
     }
+    else {
+      close(sock);
+    }
   }
-}
-string CryptoServer::read_priv_key() {
-  ifstream priv;
-  priv.open(priv_file.c_str());
-  if(!priv.is_open()) {
-    cerr << "could not open priv key " << pub_file << endl;
-    return "";
-  }
-  string str((istreambuf_iterator<char>(priv)), istreambuf_iterator<char>());
-  priv.close();
-  return str;
-}
-RSA * CryptoServer::create_rsa_priv(char * key) {
-  RSA * rsa = NULL;
-  BIO * keybio;
-  keybio = BIO_new_mem_buf(key, -1);
-  if (keybio == NULL) {
-    cerr << "Failed to create key BIO" << endl;
-    return NULL;
-  }
-  rsa = PEM_read_bio_RSAPrivateKey(keybio, &rsa,NULL, NULL);
-  return rsa;
-}
-int CryptoServer::private_decrypt(RSA * rsa, unsigned char * enc_data, int data_len,unsigned char * key, unsigned char *decrypted) {
-  if(debug) {
-    cout << "CryptoServer::private_decrypt: Got a msg of len " << "fef" << endl;
-  }
-  int padding = RSA_PKCS1_PADDING;
-  int  result = RSA_private_decrypt(data_len,enc_data,decrypted,rsa,padding);
-  return result;
-}
-string CryptoServer::decr_msg(unsigned char * msg) {
-  string priv_key = read_priv_key();
-  char * key = new char[BUF_LEN];
-  key = str_to_unsigned_char_ptr(priv_key);
-  RSA * rsa = create_rsa_priv(key);
-  char * decr = new char[BUF_LEN];
-  int result = private_decrypt(rsa, msg, ENC_LEN, (unsigned char*)key, (unsigned char*)decr);
-  if(result == -1) {
-    cerr << "Private Decrypt failed " << endl;
-  }
-  else {
-    cout << "DECR:" << endl << decr << endl;
-  }
-  return (string)decr;
 }
 void CryptoServer::send_public_key(int sock) {
-  ifstream pub;
-  pub.open(pub_file.c_str());
-  if(!pub.is_open()) {
-    cerr << "could not open pub key " << pub_file << endl;
-    close(sock);
-  }
-  string str((istreambuf_iterator<char>(pub)), istreambuf_iterator<char>());
-  pub.close();
-  send(sock, str.c_str(), BUF_LEN, 0);
+  send(sock, pub_key.c_str(), BUF_LEN, 0);
 }
