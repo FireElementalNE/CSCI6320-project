@@ -11,6 +11,7 @@ account::account(int an, char * p, int b, bool lock) {
 	pin_hash = hash_pin(p);
 	balance = b;
 	locked = lock;
+	// cout << account_num << " " << raw_to_hex((unsigned char*)pin_hash, SHA_DIGEST_LENGTH) << endl;
 }
 bool account::check_creds(int an, char * p_hash) {
 	if(account_num != an) {
