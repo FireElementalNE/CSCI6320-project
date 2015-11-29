@@ -17,6 +17,8 @@
 #include "crypto.h"
 #define BUF_LEN 4096
 #define ENC_LEN 256 // length of encr msg
+#define MAX_ACT_SIZE 16
+#define MAX_PIN_SIZE 8
 using namespace std;
 CryptoClient::CryptoClient(int p1, string h1, bool d1, string filename_pub, string filename_priv) {
 	port = p1;
@@ -96,7 +98,31 @@ void CryptoClient::get_public_key() {
 	server_pub_key = (string)buf;
 	cout << "Secure Connection Established." << endl;
 	send(server, pub_key.c_str(), BUF_LEN, 0);
-	
+	recv(server, buf, BUF_LEN, 0);
+	string received = decr_msg((unsigned char*) buf, priv_key);
+	if(received == "OK.") {
+		string pin_str, act_str;
+		char * pin_hash = new char[SHA_DIGEST_LENGTH];
+		cout << "Enter Account #: ";
+		cin >> act_str;
+		cout << "Enter Pin: ";
+		cin >> pin_str;
+		pin_hash = hash_pin((char*)pin_str.c_str());
+		char * act_char = new char[MAX_ACT_SIZE];
+		char * pin_char = new char[SHA_DIGEST_LENGTH];
+		strncpy(act_char, act_str.c_str(), MAX_ACT_SIZE);
+		strncpy(pin_char, pin_hash, SHA_DIGEST_LENGTH);
+		char * act_enc = new char[ENC_LEN];
+		char * pin_enc = new char[ENC_LEN];
+		act_enc = encr_msg((unsigned char*)act_char, act_str.size(), server_pub_key);
+		pin_enc = encr_msg((unsigned char*)pin_char, SHA_DIGEST_LENGTH, server_pub_key);
+		send(server, act_enc, ENC_LEN, 0);
+		send(server, pin_enc, ENC_LEN, 0);
+		recv(server, buf, BUF_LEN, 0);
+		string received = decr_msg((unsigned char*) buf, priv_key);
+		cout << received << endl;
+	}
+
 }
 void CryptoClient::close_connection() {
 	close(server);

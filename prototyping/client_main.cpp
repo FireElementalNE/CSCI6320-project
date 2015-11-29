@@ -39,11 +39,11 @@ int main(int argc, char ** argv) {
 	}
 	// allocate buffer
   	// read a line from standard input
-	string line;
+	/*string line;
 	while (getline(cin,line)) {
 		string resp = client.send_recv_msg(line);
 		cout << "GOT: " << resp << endl;;
-	}
+	}*/
 	client.close_connection();
 }
 void print_usage(char * argv0) {

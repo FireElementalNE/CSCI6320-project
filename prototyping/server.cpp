@@ -108,11 +108,49 @@ void CryptoServer::process_connection(int sock) {
       //  of public keys that are associated with good
       //  private keys. Will need Mersenne twister.
       char * buf_key = new char[BUF_LEN];
+      char * enc_msg = new char[ENC_LEN];
       send(sock, pub_key.c_str(), BUF_LEN, 0);
       recv(sock, buf_key, BUF_LEN, 0);
       clinet_pub_key = (string)buf_key;
-      is_approved = true;
+      // TODO: I am going to get rid of this boolean
+      //   causing some werid behavior
+      is_approved = false;
       cout << "Secure Connection Established." << endl;
+      string msg = "OK.";
+      char * tmp = new char[msg.size()];
+      strncpy(tmp, msg.c_str(), msg.size());
+      enc_msg = encr_msg((unsigned char*)tmp, msg.size(), clinet_pub_key);
+      send(sock, enc_msg, BUF_LEN, 0);
+      char * act_enc = new char[ENC_LEN];
+      char * pin_enc = new char[ENC_LEN];
+      string act_dec, pin_dec;
+      recv(sock, act_enc, ENC_LEN, 0);
+      recv(sock, pin_enc, ENC_LEN, 0);
+      act_dec = decr_msg((unsigned char *)act_enc, priv_key);
+      pin_dec = decr_msg((unsigned char *)pin_enc, priv_key);
+      char * pin_hash = new char[SHA_DIGEST_LENGTH];
+      strncpy(pin_hash, pin_dec.c_str(), SHA_DIGEST_LENGTH);
+      cout << "Account #: " << act_dec << endl;
+      cout << "Pin hash:  " << raw_to_hex((unsigned char*)pin_hash, SHA_DIGEST_LENGTH) << endl;;
+      cout << "Attempting login....";
+      bool login_success = bank.lookup_account(atoi(act_dec.c_str()), pin_hash);
+      if(!login_success) {
+        cerr << "FAILURE." << endl;
+        msg = "Login Failure.";
+        tmp = new char[msg.size()];
+        strncpy(tmp, msg.c_str(), msg.size());
+        enc_msg = encr_msg((unsigned char*)tmp, msg.size(), clinet_pub_key);
+        send(sock, enc_msg, BUF_LEN, 0);
+        close(sock);
+      }
+      else {
+        cout << "SUCCESS." << endl;
+        msg = "Login Success.";
+        tmp = new char[msg.size()];
+        strncpy(tmp, msg.c_str(), msg.size());
+        enc_msg = encr_msg((unsigned char*)tmp, msg.size(), clinet_pub_key);
+        send(sock, enc_msg, BUF_LEN, 0);
+      }
     }
     else if(is_approved){
       string msg = decr_msg((unsigned char *)buf, priv_key);
