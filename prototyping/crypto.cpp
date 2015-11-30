@@ -11,8 +11,7 @@
 #include <openssl/bio.h>
 #include <openssl/err.h>
 #include <openssl/sha.h>
-#define BUF_LEN 4096
-#define ENC_LEN 256 // length of encr msg
+#include "constants.h"
 using namespace std;
 RSA * create_rsa_pub(char * key) {
   RSA * rsa = NULL;

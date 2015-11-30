@@ -4,8 +4,8 @@
 #include <iomanip>
 #include <sstream>
 #include <fstream>
+#include "constants.h"
 using namespace std;
-#define ENC_LEN 256 // length of encr msg
 char * str_to_char_ptr(string s) {
 	const char * tmp = new char[s.size()];
    	tmp = s.c_str();

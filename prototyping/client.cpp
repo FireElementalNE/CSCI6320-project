@@ -15,10 +15,7 @@
 #include "client.h"
 #include "gen_functions.h"
 #include "crypto.h"
-#define BUF_LEN 4096
-#define ENC_LEN 256 // length of encr msg
-#define MAX_ACT_SIZE 16
-#define MAX_PIN_SIZE 8
+#include "constants.h"
 using namespace std;
 CryptoClient::CryptoClient(int p1, string h1, bool d1, string filename_pub, string filename_priv) {
 	port = p1;

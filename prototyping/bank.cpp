@@ -6,8 +6,7 @@
 #include "account.h"
 #include "server.h"
 #include "bank.h"
-#define MAX_ACT_SIZE 16
-#define MAX_PIN_SIZE 8
+#include "constants.h"
 using namespace std;
 Bank::Bank(string filename) {
 	init_accounts(filename);

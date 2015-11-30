@@ -14,9 +14,7 @@
 #include "gen_functions.h"
 #include "crypto.h"
 #include "bank.h"
-#define BUF_LEN 4096
-#define MAXCONNECTIONS 5
-#define ENC_LEN 256 // length of encr msg
+#include "constants.h"
 CryptoServer::CryptoServer(int p1, string h1, bool d1, string filename_pub, string filename_priv, string accounts_filename) {
 	port = p1;
 	host = h1;
