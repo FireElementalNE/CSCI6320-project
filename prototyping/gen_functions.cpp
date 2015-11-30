@@ -6,11 +6,12 @@
 #include <fstream>
 #include "constants.h"
 using namespace std;
-char * str_to_char_ptr(string s) {
-	const char * tmp = new char[s.size()];
-   	tmp = s.c_str();
+char * str_to_char_ptr_safe(string s, int max_len) {
+    if(s.size() > (unsigned int)max_len) {
+        return NULL;
+    }
     char * out = new char[s.size()];
-    strncpy(out, tmp, s.size());
+    strncpy(out, s.c_str(), s.size());
     return out;
 }
 string raw_to_hex(unsigned char * bs, unsigned int n) {

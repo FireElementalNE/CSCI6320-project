@@ -5,4 +5,5 @@ const int MAXCONNECTIONS = 5;
 const int ENC_LEN = 256;
 const int MAX_ACT_SIZE = 16;
 const int MAX_PIN_SIZE = 8;
+const int MAX_AMT_LEN = 16;
 #endif /* CONSTANTS_H */

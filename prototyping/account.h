@@ -5,7 +5,7 @@ using namespace std;
 class account {
 private:
 	int account_num;
-	char * pin_hash;
+	int pin;
 	int balance;
 	bool logged_in;
 	bool locked;
@@ -13,7 +13,7 @@ private:
 	bool check_pin(int i);
 public:
 	account(int an, char * p, int b, bool lock);
-	bool check_creds(int an, char * p_hash);
+	bool check_creds(int an, int p);
 	bool check_creds_act(account act);
 	bool deposit(int amount);
 	bool withdraw(int amount);

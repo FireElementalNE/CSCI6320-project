@@ -10,11 +10,13 @@
 #include <openssl/evp.h>
 #include <openssl/bio.h>
 #include <openssl/err.h>
+#include <regex>
 #include "server.h"
 #include "gen_functions.h"
 #include "crypto.h"
 #include "bank.h"
 #include "constants.h"
+using namespace std;
 CryptoServer::CryptoServer(int p1, string h1, bool d1, string filename_pub, string filename_priv, string accounts_filename) {
 	port = p1;
 	host = h1;
@@ -106,63 +108,76 @@ void CryptoServer::process_connection(int sock) {
       //  of public keys that are associated with good
       //  private keys. Will need Mersenne twister.
       char * buf_key = new char[BUF_LEN];
-      char * enc_msg = new char[ENC_LEN];
-      send(sock, pub_key.c_str(), BUF_LEN, 0);
+      send(sock, pub_key.c_str(), pub_key.size(), 0);
       recv(sock, buf_key, BUF_LEN, 0);
       clinet_pub_key = (string)buf_key;
       // TODO: I am going to get rid of this boolean
       //   causing some werid behavior
       is_approved = false;
       cout << "Secure Connection Established." << endl;
-      string msg = "OK.";
-      char * tmp = new char[msg.size()];
-      strncpy(tmp, msg.c_str(), msg.size());
-      enc_msg = encr_msg((unsigned char*)tmp, msg.size(), clinet_pub_key);
-      send(sock, enc_msg, ENC_LEN, 0);
-      char * act_enc = new char[ENC_LEN];
-      char * pin_enc = new char[ENC_LEN];
-      string act_dec, pin_dec;
-      recv(sock, act_enc, ENC_LEN, 0);
-      recv(sock, pin_enc, ENC_LEN, 0);
-      act_dec = decr_msg((unsigned char *)act_enc, priv_key);
-      pin_dec = decr_msg((unsigned char *)pin_enc, priv_key);
-      char * pin_hash = new char[SHA_DIGEST_LENGTH];
-      strncpy(pin_hash, pin_dec.c_str(), SHA_DIGEST_LENGTH);
-      cout << "Account #: " << act_dec << endl;
-      cout << "Pin hash:  " << raw_to_hex((unsigned char*)pin_hash, SHA_DIGEST_LENGTH) << endl;;
+      char * ok_enc = new char[ENC_LEN];
+      char * fail_enc = new char[ENC_LEN];
+      char * success_enc = new char[ENC_LEN];
+      ok_enc = encr_msg_str("OK.", clinet_pub_key);
+      fail_enc = encr_msg_str("FAILURE.", clinet_pub_key);
+      success_enc = encr_msg_str("SUCCESS.", clinet_pub_key);
+      send(sock, (unsigned char*)ok_enc, ENC_LEN, 0);
+      // char * act_enc = new char[ENC_LEN];
+      // char * pin_enc = new char[ENC_LEN];
+      char * login_info_enc = new char[ENC_LEN];
+      regex rgx1("^(\\d+):(\\d+)$");
+      recv(sock, login_info_enc, ENC_LEN, 0);
+      string login_info_dec = decr_msg((unsigned char*)login_info_enc, priv_key);
+      smatch result1;
+      string login_info_str(login_info_dec);
+      cout << login_info_str << endl;
+      regex_search(login_info_str, result1, rgx1);
+      for(unsigned int i = 0; i < result1.size(); i++) {
+        cout << result1[i] << endl;
+      }
+      int act = atoi(str_to_char_ptr_safe(result1[1], MAX_ACT_SIZE));
+      int pin = atoi(str_to_char_ptr_safe(result1[2], MAX_PIN_SIZE));
+      cout << "sizse: " << result1.size() << endl;
+      cout << "Account #: " << act << endl;
+      cout << "Pin:  " << pin << endl;;
       cout << "Attempting login....";
-      bool login_success = bank.lookup_account(atoi(act_dec.c_str()), pin_hash);
+      bool login_success = bank.lookup_account(act, pin);
+      cout << login_success << endl;
       if(!login_success) {
-        cerr << "FAILURE." << endl;
-        msg = "FAILURE.";
-        tmp = new char[msg.size()];
-        strncpy(tmp, msg.c_str(), msg.size());
-        enc_msg = new char[ENC_LEN];
-        enc_msg = encr_msg((unsigned char*)tmp, msg.size(), clinet_pub_key);
-        send(sock, enc_msg, ENC_LEN, 0);
+        send(sock, fail_enc, ENC_LEN, 0);
         close(sock);
       }
       else {
         cout << "SUCCESS." << endl;
-        msg = act_dec;
-        tmp = new char[msg.size()];
-        strncpy(tmp, msg.c_str(), msg.size());
-        enc_msg = new char[ENC_LEN];
-        enc_msg = encr_msg((unsigned char*)tmp, msg.size(), clinet_pub_key);
-        send(sock, enc_msg, ENC_LEN, 0);
+        send(sock, success_enc, ENC_LEN, 0);
         char * transaction_enc;
         char * transaction_dec;
         do {
-          cout << "in loop" << endl;
           transaction_dec = new char[ENC_LEN];
           transaction_enc = new char[ENC_LEN];
-          enc_msg = new char[ENC_LEN];
           recv(sock, transaction_enc, ENC_LEN, 0);
-          msg = "OK.";
-          tmp = new char[msg.size()];
-          strncpy(tmp, msg.c_str(), msg.size());
-          enc_msg = encr_msg((unsigned char*)tmp, msg.size(), clinet_pub_key);
-          send(sock, enc_msg, ENC_LEN, 0);
+          string tmp = decr_msg((unsigned char*)transaction_enc, priv_key);
+          regex rgx("^([A-Z]):(\\d+)$");
+          smatch result;
+          regex_search(tmp, result, rgx);
+          cout << result.size() << endl;
+          cout << result[1] << endl;
+          if(result.size() != 3) {
+            send(sock, fail_enc, ENC_LEN, 0);
+          }
+          if(result[1] == "W") {
+            int amount = atoi(str_to_char_ptr_safe(result[2], MAX_AMT_LEN));
+            cout << "account before: " << bank.balance_inq(act, pin) << endl;
+            bool withdraw_success = bank.withdraw(act, pin, amount);
+            cout << "account after: " << bank.balance_inq(act, pin) << endl;
+            if(withdraw_success) {
+              send(sock, success_enc, ENC_LEN, 0);
+            }
+            else {
+             send(sock, fail_enc, ENC_LEN, 0); 
+            }
+          }
+          
         } while(strcmp(transaction_dec, "EXIT.") != 0);
         close(sock);
       }
@@ -194,5 +209,5 @@ void CryptoServer::process_connection(int sock) {
   }
 }
 void CryptoServer::send_public_key(int sock) {
-  send(sock, pub_key.c_str(), BUF_LEN, 0);
+  send(sock, pub_key.c_str(), pub_key.size(), 0);
 }

@@ -9,4 +9,5 @@ extern int public_encrypt(RSA * rsa, unsigned char * data, int data_len, unsigne
 extern std::string decr_msg(unsigned char * msg, std::string priv_key);
 extern char * encr_msg(unsigned char * msg, int msg_len, std::string pub_key);
 extern char * hash_pin(char * pin);
+extern char * encr_msg_str(std::string msg_str, std::string pub_key);
 #endif /* CRYPTO_H */

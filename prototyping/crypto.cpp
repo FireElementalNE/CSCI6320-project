@@ -69,6 +69,18 @@ char * encr_msg(unsigned char * msg, int msg_len, string pub_key) {
 	}
 	return enc;
 }
+char * encr_msg_str(string msg_str, string pub_key) {
+  int msg_len;
+  if(msg_str.size() > ENC_LEN) {
+    return NULL;
+  }
+  else {
+    msg_len = msg_str.size();
+  }
+  char * msg = new char[ENC_LEN];
+  strncpy(msg, msg_str.c_str(), msg_str.size());
+  return encr_msg((unsigned char*)msg, msg_len, pub_key);
+}
 char * hash_pin(char * pin) {
     // string pin_str = to_string(pin);
     // char * tmp = new char[pin_str.size()];

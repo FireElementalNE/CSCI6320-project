@@ -91,30 +91,36 @@ void CryptoClient::get_public_key() {
 	char * buf = new char[BUF_LEN];
 	string msg = "PUBKEY";
 	send(server, msg.c_str(), msg.length(), 0);
+	// this might work (using pub_key.size() instead of BUF_LEN)
 	recv(server, buf, BUF_LEN, 0);
 	server_pub_key = (string)buf;
 	cout << "Secure Connection Established." << endl;
-	send(server, pub_key.c_str(), BUF_LEN, 0);
+	send(server, pub_key.c_str(), pub_key.size(), 0);
 	recv(server, buf, ENC_LEN, 0);
 	string received = decr_msg((unsigned char*) buf, priv_key);
 	if(received == "OK.") {
 		string pin_str, act_str;
-		char * pin_hash = new char[SHA_DIGEST_LENGTH];
 		cout << "Enter Account #: ";
 		cin >> act_str;
 		cout << "Enter Pin: ";
 		cin >> pin_str;
-		pin_hash = hash_pin((char*)pin_str.c_str());
 		char * act_char = new char[MAX_ACT_SIZE];
-		char * pin_char = new char[SHA_DIGEST_LENGTH];
+		char * pin_char = new char[MAX_PIN_SIZE];
+		char * login_info = new char[MAX_ACT_SIZE + SHA_DIGEST_LENGTH];
 		strncpy(act_char, act_str.c_str(), MAX_ACT_SIZE);
-		strncpy(pin_char, pin_hash, SHA_DIGEST_LENGTH);
-		char * act_enc = new char[ENC_LEN];
-		char * pin_enc = new char[ENC_LEN];
-		act_enc = encr_msg((unsigned char*)act_char, act_str.size(), server_pub_key);
-		pin_enc = encr_msg((unsigned char*)pin_char, SHA_DIGEST_LENGTH, server_pub_key);
-		send(server, act_enc, ENC_LEN, 0);
-		send(server, pin_enc, ENC_LEN, 0);
+		strncpy(pin_char, pin_str.c_str(), MAX_PIN_SIZE);
+		strcat(login_info, act_char);
+		strcat(login_info, ":");
+		strcat(login_info, pin_char);
+		// char * act_enc = new char[ENC_LEN];
+		// char * pin_enc = new char[ENC_LEN];
+		// act_enc = encr_msg((unsigned char*)act_char, act_str.size(), server_pub_key);
+		// pin_enc = encr_msg((unsigned char*)pin_char, SHA_DIGEST_LENGTH, server_pub_key);
+		// send(server, act_enc, ENC_LEN, 0);
+		cout << login_info << endl;
+		char * login_info_enc = new char[ENC_LEN];
+		login_info_enc = encr_msg((unsigned char *)login_info, act_str.size() + SHA_DIGEST_LENGTH, server_pub_key);
+		send(server, login_info_enc, ENC_LEN, 0);
 		recv(server, buf, ENC_LEN, 0);
 		string received = decr_msg((unsigned char*) buf, priv_key);
 		char * command_enc;
@@ -126,21 +132,30 @@ void CryptoClient::get_public_key() {
 				cout << "Main Menu: " << endl;
 				cout << "[1] Withdraw" << endl;
 				cout << "[2] balance" << endl;
+				cout << "[3] logout" << endl;
 				cout << ">";
 				cin >> command;
 				int command_int = atoi(command.c_str());
-				if(command_int != 1 && command_int != 2) {
+				if(command_int != 1 && command_int != 2 && command_int != 3) {
 					cerr << "Invalid choice." << endl;
 				}
 				else {
-					char * command_tmp = new char[command.size()];
-					char * server_resp = new char[ENC_LEN];
-					strncpy(command_tmp, command.c_str(), command.size());
-					command_enc = encr_msg((unsigned char *)command_tmp, command.size(), server_pub_key);
-					send(server, command_enc, ENC_LEN, 0);
-					recv(server, server_resp, ENC_LEN, 0);
-					string response = decr_msg((unsigned char*)server_resp, priv_key);
-					cout << "server: " << response << endl;
+					if(command_int == 1) {
+						char * server_resp = new char[ENC_LEN];
+						// for buffer overflow
+						char * payload_safe = new char[MAX_AMT_LEN];
+						string amount_str;
+						cout << "Amount>";
+						cin >> amount_str;
+						string payload = "W:" + amount_str;
+						strncpy(payload_safe, payload.c_str(), MAX_AMT_LEN + 2);
+						command_enc = encr_msg((unsigned char *)payload_safe, strlen(payload_safe), server_pub_key);
+						send(server, command_enc, ENC_LEN, 0);
+						recv(server, server_resp, ENC_LEN, 0);
+						string response = decr_msg((unsigned char*)server_resp, priv_key);
+						cout << "server: " << response << endl;
+					}
+					
 				}
 
 			}

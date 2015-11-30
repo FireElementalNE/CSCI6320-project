@@ -12,9 +12,9 @@ Bank::Bank(string filename) {
 	init_accounts(filename);
 	cout << "Bank loaded " << bank_accounts.size() << " accounts." << endl;
 }
-bool Bank::lookup_account(int an, char * p_hash) {
+bool Bank::lookup_account(int an, int p) {
 	for(unsigned int i = 0; i < bank_accounts.size(); i++) {
-		if(bank_accounts[i].check_creds(an, p_hash)) {
+		if(bank_accounts[i].check_creds(an, p)) {
 			cout << "Account Found!" << endl;
 			return true;
 		}
@@ -23,30 +23,31 @@ bool Bank::lookup_account(int an, char * p_hash) {
 	return false;
 }
 
-bool Bank::deposit(int an, char * p_hash, int amount) {
-	if(!lookup_account(an, p_hash)) {
+bool Bank::deposit(int an, int p, int amount) {
+	if(!lookup_account(an, p)) {
 		return false;
 	}
 	for(unsigned int i = 0; i < bank_accounts.size(); i++) {
-		if(bank_accounts[i].check_creds(an, p_hash)) {
+		if(bank_accounts[i].check_creds(an, p)) {
 			if(bank_accounts[i].is_locked()) {
 				cerr << "deposit: Bank account locked." << endl;
 				return false;
 			}
 			else {
 				bank_accounts[i].deposit(amount);
+				return true;
 			}
 		}
 	}
 	cerr << "deposit: I shouldnt get here" << endl;
 	return false;
 }
-int Bank::balance_inq(int an, char * p_hash) {
-	if(!lookup_account(an, p_hash)) {
+int Bank::balance_inq(int an, int p) {
+	if(!lookup_account(an, p)) {
 		return -1;
 	}
 	for(unsigned int i = 0; i < bank_accounts.size(); i++) {
-		if(bank_accounts[i].check_creds(an, p_hash)) {
+		if(bank_accounts[i].check_creds(an, p)) {
 			if(bank_accounts[i].is_locked()) {
 				cerr << "balance_inq: Bank account locked." << endl;
 			}
@@ -58,18 +59,19 @@ int Bank::balance_inq(int an, char * p_hash) {
 	cerr << "balance_inq: I shouldnt get here" << endl;
 	return -1;
 }
-bool Bank::withdraw(int an, char * p_hash, int amount) {
-	if(!lookup_account(an, p_hash)) {
+bool Bank::withdraw(int an, int p, int amount) {
+	if(!lookup_account(an, p)) {
 		return false;
 	}
 	for(unsigned int i = 0; i < bank_accounts.size(); i++) {
-		if(bank_accounts[i].check_creds(an, p_hash)) {
+		if(bank_accounts[i].check_creds(an, p)) {
 			if(bank_accounts[i].is_locked()) {
 				cerr << "balance_inq: Bank account locked." << endl;
 				return false;
 			}
 			else {
 				bank_accounts[i].withdraw(amount);
+				return true;
 			}
 		}
 	}
