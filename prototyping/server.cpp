@@ -118,7 +118,7 @@ void CryptoServer::process_connection(int sock) {
       char * tmp = new char[msg.size()];
       strncpy(tmp, msg.c_str(), msg.size());
       enc_msg = encr_msg((unsigned char*)tmp, msg.size(), clinet_pub_key);
-      send(sock, enc_msg, BUF_LEN, 0);
+      send(sock, enc_msg, ENC_LEN, 0);
       char * act_enc = new char[ENC_LEN];
       char * pin_enc = new char[ENC_LEN];
       string act_dec, pin_dec;
@@ -134,20 +134,37 @@ void CryptoServer::process_connection(int sock) {
       bool login_success = bank.lookup_account(atoi(act_dec.c_str()), pin_hash);
       if(!login_success) {
         cerr << "FAILURE." << endl;
-        msg = "Login Failure.";
+        msg = "FAILURE.";
         tmp = new char[msg.size()];
         strncpy(tmp, msg.c_str(), msg.size());
+        enc_msg = new char[ENC_LEN];
         enc_msg = encr_msg((unsigned char*)tmp, msg.size(), clinet_pub_key);
-        send(sock, enc_msg, BUF_LEN, 0);
+        send(sock, enc_msg, ENC_LEN, 0);
         close(sock);
       }
       else {
         cout << "SUCCESS." << endl;
-        msg = "Login Success.";
+        msg = act_dec;
         tmp = new char[msg.size()];
         strncpy(tmp, msg.c_str(), msg.size());
+        enc_msg = new char[ENC_LEN];
         enc_msg = encr_msg((unsigned char*)tmp, msg.size(), clinet_pub_key);
-        send(sock, enc_msg, BUF_LEN, 0);
+        send(sock, enc_msg, ENC_LEN, 0);
+        char * transaction_enc;
+        char * transaction_dec;
+        do {
+          cout << "in loop" << endl;
+          transaction_dec = new char[ENC_LEN];
+          transaction_enc = new char[ENC_LEN];
+          enc_msg = new char[ENC_LEN];
+          recv(sock, transaction_enc, ENC_LEN, 0);
+          msg = "OK.";
+          tmp = new char[msg.size()];
+          strncpy(tmp, msg.c_str(), msg.size());
+          enc_msg = encr_msg((unsigned char*)tmp, msg.size(), clinet_pub_key);
+          send(sock, enc_msg, ENC_LEN, 0);
+        } while(strcmp(transaction_dec, "EXIT.") != 0);
+        close(sock);
       }
     }
     else if(is_approved){
@@ -165,7 +182,7 @@ void CryptoServer::process_connection(int sock) {
       char * enc_msg = new char[ENC_LEN];
       strncpy(tmp, msg.c_str(), msg.size());
       enc_msg = encr_msg((unsigned char*)tmp, msg.size(), clinet_pub_key);
-      send(sock, enc_msg, BUF_LEN, 0);
+      send(sock, enc_msg, ENC_LEN, 0);
       if(debug) {
         string hex_tmp = raw_to_hex((unsigned char *)enc_msg, ENC_LEN);
         cout << "DEBUG: sent '" << hex_tmp << "' to client." << endl;

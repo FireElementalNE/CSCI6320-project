@@ -95,7 +95,7 @@ void CryptoClient::get_public_key() {
 	server_pub_key = (string)buf;
 	cout << "Secure Connection Established." << endl;
 	send(server, pub_key.c_str(), BUF_LEN, 0);
-	recv(server, buf, BUF_LEN, 0);
+	recv(server, buf, ENC_LEN, 0);
 	string received = decr_msg((unsigned char*) buf, priv_key);
 	if(received == "OK.") {
 		string pin_str, act_str;
@@ -115,11 +115,43 @@ void CryptoClient::get_public_key() {
 		pin_enc = encr_msg((unsigned char*)pin_char, SHA_DIGEST_LENGTH, server_pub_key);
 		send(server, act_enc, ENC_LEN, 0);
 		send(server, pin_enc, ENC_LEN, 0);
-		recv(server, buf, BUF_LEN, 0);
+		recv(server, buf, ENC_LEN, 0);
 		string received = decr_msg((unsigned char*) buf, priv_key);
-		cout << received << endl;
-	}
+		char * command_enc;
+		if(received != "FAILURE."){
+			string command = "";
+			do {
+				command_enc = new char[ENC_LEN];
+				cout << "Welcome " << received << "!" << endl;
+				cout << "Main Menu: " << endl;
+				cout << "[1] Withdraw" << endl;
+				cout << "[2] balance" << endl;
+				cout << ">";
+				cin >> command;
+				int command_int = atoi(command.c_str());
+				if(command_int != 1 && command_int != 2) {
+					cerr << "Invalid choice." << endl;
+				}
+				else {
+					char * command_tmp = new char[command.size()];
+					char * server_resp = new char[ENC_LEN];
+					strncpy(command_tmp, command.c_str(), command.size());
+					command_enc = encr_msg((unsigned char *)command_tmp, command.size(), server_pub_key);
+					send(server, command_enc, ENC_LEN, 0);
+					recv(server, server_resp, ENC_LEN, 0);
+					string response = decr_msg((unsigned char*)server_resp, priv_key);
+					cout << "server: " << response << endl;
+				}
 
+			}
+			while(command != "exit");
+			char * exit_command = new char[5];
+			char * exit_command_enc = new char[ENC_LEN];
+			strncpy(exit_command, "EXIT.", 5);
+			exit_command_enc = encr_msg((unsigned char *)exit_command, 5, server_pub_key);
+			send(server, exit_command_enc, ENC_LEN, 0);
+		}
+	}
 }
 void CryptoClient::close_connection() {
 	close(server);
