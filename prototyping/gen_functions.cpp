@@ -61,7 +61,7 @@ vector <string> get_account_names(string account_dir) {
             memset(tmp_name, '\0', MAX_FILENAME_LEN * sizeof(char));
             strncpy(tmp_name, ent->d_name, MAX_FILENAME_LEN);
             string f_name(tmp_name);
-            regex file_name_regex(CARD_FNAME_REGEX);
+            regex file_name_regex(ACT_FNAME_REGEX);
             smatch file_name_match;
             regex_search(f_name, file_name_match, file_name_regex);
             if(file_name_match.size() == 2) {
@@ -71,4 +71,23 @@ vector <string> get_account_names(string account_dir) {
         closedir (dir);
     }
     return accounts;
+}
+bool check_pin(string act, string pin, string a_dir) {
+    int p = atoi(pin.c_str());
+    string f_name = a_dir + "/" + act + ".card";
+    if(!file_exists(f_name)) {
+        cerr << "file " << f_name << " does not exist." << endl;
+        return false;
+    }
+    ifstream file;
+    file.open(f_name);
+    if(!file.is_open()) {
+        cerr << "could not open file " << f_name << endl;
+        return false;
+    }
+    string p_str;
+    file >> p_str;
+    file.close();
+    int real_pin = atoi(p_str.c_str());
+    return real_pin == p; 
 }

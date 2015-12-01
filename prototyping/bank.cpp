@@ -24,8 +24,10 @@ bool Bank::is_an_account(string an) {
 }
 bool Bank::lookup_account(string an, int p) {
 	for(unsigned int i = 0; i < bank_accounts.size(); i++) {
-		if(bank_accounts[i].check_creds(an, p)) {
-			return true;
+		if(bank_accounts[i].chk_account(an)) {
+			if(bank_accounts[i].check_creds(an, p)) {
+				return true;
+			}
 		}
 	}
 	return false;
@@ -36,8 +38,8 @@ bool Bank::deposit(string an, int p, int amount) {
 		return false;
 	}
 	for(unsigned int i = 0; i < bank_accounts.size(); i++) {
-		if(bank_accounts[i].check_creds(an, p)) {
-				return bank_accounts[i].deposit(amount);
+		if(bank_accounts[i].chk_account(an)) {
+			return bank_accounts[i].deposit(amount);
 		}
 	}
 	cerr << "deposit: I shouldnt get here" << endl;
@@ -48,8 +50,8 @@ int Bank::balance_inq(string an, int p) {
 		return -1;
 	}
 	for(unsigned int i = 0; i < bank_accounts.size(); i++) {
-		if(bank_accounts[i].check_creds(an, p)) {
-				return bank_accounts[i].get_balance();
+		if(bank_accounts[i].chk_account(an)) {
+			return bank_accounts[i].get_balance(an, p);
 		}
 	}
 	cerr << "balance_inq: I shouldnt get here" << endl;
@@ -60,14 +62,18 @@ bool Bank::withdraw(string an, int p, int amount) {
 		return false;
 	}
 	for(unsigned int i = 0; i < bank_accounts.size(); i++) {
-		if(bank_accounts[i].check_creds(an, p)) {
-			return bank_accounts[i].withdraw(amount);
+		if(bank_accounts[i].chk_account(an)) {
+			return bank_accounts[i].withdraw(an, p, amount);
 		}
 	}
 	cerr << "withdraw: I shouldnt get here" << endl;
 	return false;
 }
 bool Bank::transfer(string an, int p, string t_account, int amount) {
+	if(an == t_account) {
+		cerr << "accounts are the same" << endl;
+		return false;
+	}
 	if(!lookup_account(an, p)) {
 		return false;
 	}
@@ -77,8 +83,8 @@ bool Bank::transfer(string an, int p, string t_account, int amount) {
 	bool withdraw_success = false;
 	bool deposit_success = false;
 	for(unsigned int i = 0; i < bank_accounts.size(); i++) {
-		if(bank_accounts[i].check_creds(an, p)) {
-			withdraw_success = bank_accounts[i].withdraw(amount);
+		if(bank_accounts[i].chk_account(an)) {
+			withdraw_success = bank_accounts[i].withdraw(an, p, amount);
 		}
 	}
 	if(!withdraw_success) {
@@ -86,11 +92,24 @@ bool Bank::transfer(string an, int p, string t_account, int amount) {
 	}
 	for(unsigned int i = 0; i < bank_accounts.size(); i++) {
 		if(bank_accounts[i].chk_account(t_account)) {
+			bank_accounts[i].load_account();
 			deposit_success = bank_accounts[i].deposit(amount);
+			if(!deposit_success) {
+				cerr << "could not transfer money, returning it ot original account." << endl;
+				bank_accounts[i].save_account();
+				for(unsigned int i = 0; i < bank_accounts.size(); i++) {
+					if(bank_accounts[i].chk_account(an)) {
+						deposit_success = bank_accounts[i].deposit(amount);
+					}
+				}
+				if(!deposit_success) {
+					cerr << "ERROR! ERROR! account " << an << " is owed " << amount << "." << endl;
+					return false;
+				}
+				return false;
+			}
+			bank_accounts[i].save_account();
 		}
-	}
-	if(!deposit_success) {
-		return false;
 	}
 	return true;
 

@@ -13,15 +13,16 @@ private:
 	string account_str();
 public:
 	account(string an, string accounts_dir);
+	string get_an();
 	bool load_account();
 	bool save_account();
 	bool check_creds(string an, int p);
-	bool check_creds_act(account act);
 	bool deposit(int amount);
-	bool withdraw(int amount);
-	int get_balance();
+	bool withdraw(string an, int p, int amount);
+	int get_balance(string an, int pin);
 	bool is_locked();
 	bool check_file();
+	bool transfer(string an, int p, int amount);
 	bool chk_account(string an);
 };
 #endif /* ACCOUNT_H */

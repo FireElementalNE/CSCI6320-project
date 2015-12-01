@@ -5,9 +5,11 @@
 #include "account.h"
 #include "gen_functions.h"
 using namespace std;
+string account::get_an() {
+	return account_name;
+}
 account::account(string an, string accounts_dir) {
-	account_filename = accounts_dir + "/" + an + ".card";
-	cout << account_filename << endl;
+	account_filename = accounts_dir + "/" + an + ".act";
 	lock_filename = accounts_dir + "/" + an + ".lock";
 	account_name = an;
 	reset_vars();
@@ -30,7 +32,6 @@ bool account::load_account() {
 	file >> pin_str >> balance_str;
 	pin = atoi(pin_str.c_str());
 	balance = atoi(balance_str.c_str());
-	cout << pin << " " << balance << endl;
 	fstream fs;
     fs.open(lock_filename, ios::out);
     fs.close();
@@ -79,9 +80,26 @@ bool account::check_creds(string an, int p) {
 	}
 	return true;
 }
-bool account::withdraw(int amount) {
+bool account::transfer(string an, int p, int amount) {
+	if(is_locked()) {
+		return false;
+	}
+	load_account();
+	if(!check_creds(an, p)) {
+		cerr << "transfer: bad credentials." << endl;
+		return false;
+	}
+	deposit(amount);
+	save_account();
+	return true;
+}
+bool account::withdraw(string an, int p, int amount) {
 	if(!is_locked()) {
-		cerr << "Withdraw unsuccessful account not locked." << endl;
+		cerr << "withdraw: unsuccessful account not locked." << endl;
+		return false;
+	}
+	if(!check_creds(an, p)) {
+		cerr << "withdraw: bad credentials." << endl;
 		return false;
 	}
 	if(amount > balance) {
@@ -94,28 +112,22 @@ bool account::withdraw(int amount) {
 }
 bool account::deposit(int amount) {
 	if(!is_locked()) {
-		cerr << "Deposit unsuccessful account not locked." << endl;
+		cerr << "deposit: unsuccessful account not locked." << endl;
 		return false;
 	}
 	balance += amount;
 	return true;
 }
-int account::get_balance() {
+int account::get_balance(string an, int p) {
 	if(!is_locked()) {
-		cerr << "Balance Inq unsuccessful account not locked." << endl;
+		cerr << "get_balance: unsuccessful account not locked." << endl;
 		return -1;
 	}
-	return balance;
-}
-bool account::check_creds_act(account act) {
-	if(!is_locked()) {
-		cerr << "check_creds_act unsuccessful account not locked." << endl;
+	if(!check_creds(an, p)) {
+		cerr << "get_balance: bad credentials." << endl;
 		return false;
 	}
-	if(act.check_creds(account_name, pin)) {
-		return true;
-	}
-	return false;
+	return balance;
 }
 bool account::is_locked() {
 	return file_exists(lock_filename);

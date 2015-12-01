@@ -9,14 +9,12 @@ server: server_main.cpp $(OBJ)
 	$(CC) -o server server_main.cpp $(OBJ) $(CFLAGS) $(CRYPTO_CFLAGS)
 proxy: proxy.cpp
 	$(CC) -o proxy proxy.cpp $(CFLAGS)
-bank-test: bank-test.cpp bank.o account.o gen_functions.o constants.o 
-	$(CC) bank-test.cpp -o bank-test bank.o account.o gen_functions.o constants.o $(CFLAGS)
 server.o: server.cpp
 	$(CC) -c -o server.o server.cpp $(CFLAGS) $(CRYPTO_CFLAGS)
 client.o: client.cpp
 	$(CC) -c -o client.o client.cpp $(CFLAGS) $(CRYPTO_CFLAGS)
-gen_functions.o: gen_functions.cpp constants.o 
-	$(CC) -c -o gen_functions.o gen_functions.cpp constants.o $(CFLAGS)
+gen_functions.o: gen_functions.cpp 
+	$(CC) -c -o gen_functions.o gen_functions.cpp $(CFLAGS)
 crypto.o: crypto.cpp
 	$(CC) -c -o crypto.o crypto.cpp $(CFLAGS) $(CRYPTO_CFLAGS)
 bank.o: bank.cpp

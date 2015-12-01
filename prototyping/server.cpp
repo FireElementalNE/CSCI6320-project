@@ -11,7 +11,7 @@
 #include "bank.h"
 #include "constants.h"
 using namespace std;
-CryptoServer::CryptoServer(int p1, string h1, bool d1, string filename_pub, string filename_priv, string accounts_filename) {
+CryptoServer::CryptoServer(int p1, string h1, bool d1, string filename_pub, string filename_priv, string accounts_dir) {
 	port = p1;
 	host = h1;
 	debug = d1;
@@ -20,7 +20,7 @@ CryptoServer::CryptoServer(int p1, string h1, bool d1, string filename_pub, stri
 	clientlen = sizeof(client_addr);
   pub_key = read_keyfile(filename_pub);
   priv_key = read_keyfile(filename_priv);
-  bank = Bank(accounts_filename);
+  bank = Bank(accounts_dir);
 }
 bool CryptoServer::setup_connection() {
 	if(debug) {
@@ -133,14 +133,15 @@ void CryptoServer::process_connection(int sock) {
       string login_info_str(login_info_dec);
       cout << login_info_str << endl;
       regex_search(login_info_str, login_regex_result, act_regex);
-      int act = atoi(str_to_char_ptr_safe(login_regex_result[1], MAX_ACT_SIZE));
+      string act = login_regex_result[1];
       int pin = atoi(str_to_char_ptr_safe(login_regex_result[2], MAX_PIN_SIZE));
       cout << "Account #: " << act << endl;
       cout << "Pin:  " << pin << endl;;
       cout << "Attempting login....";
-      bool login_success = bank.lookup_account(act, pin);
+      bool login_success = bank.lock_act(act, pin);
       bool do_exit = false;
       if(!login_success) {
+        cout << "FAILED." << endl;
         send(sock, fail_enc, ENC_LEN, 0);
         break;
       }
@@ -223,7 +224,7 @@ void CryptoServer::process_connection(int sock) {
           }
           else if(trans_regex_transfer_result.size() == 3) {
             int amount = atoi(str_to_char_ptr_safe(trans_regex_transfer_result[1], MAX_AMT_LEN));
-            int t_account = atoi(str_to_char_ptr_safe(trans_regex_transfer_result[2], MAX_AMT_LEN));
+            string t_account = trans_regex_transfer_result[2];
             cout << "account before: " << bank.balance_inq(act, pin) << endl;
             bool transfer_success = bank.transfer(act, pin, t_account, amount);
             if(transfer_success) {
@@ -237,9 +238,9 @@ void CryptoServer::process_connection(int sock) {
               send(sock, fail_enc, ENC_LEN, 0); 
             }
             cout << "account after: " << bank.balance_inq(act, pin) << endl;
-            cout <<  "2 after " << bank.balance_inq(2, 8390) << endl; 
           }
         }
+        bank.unlock_act(act, pin);
         close(sock);
       }
     }

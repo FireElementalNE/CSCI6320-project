@@ -10,7 +10,7 @@ extern const int MAX_PIN_SIZE;
 extern const int MAX_AMT_LEN;
 extern const int RAND_PAD_LEN;
 extern const int MAX_FILENAME_LEN;
-extern const std::string CARD_FNAME_REGEX;
+extern const std::string ACT_FNAME_REGEX;
 extern const std::string OK_REGEX_STR;
 extern const std::string FAIL_REGEX_STR;
 extern const std::string SUCCESS_REGEX_STR;

@@ -7,5 +7,6 @@ extern std::string read_keyfile(std::string filename);
 extern char * str_to_char_ptr_safe(std::string s, int max_len);
 extern std::string to_lower(std::string s);
 extern bool file_exists(const std::string& file);
-extern vector <string> get_account_names(string account_dir);
+extern std::vector <std::string> get_account_names(std::string account_dir);
+extern bool check_pin(std::string a_dir, std::string act, std::string pin);
 #endif /* GENFUNC_H */

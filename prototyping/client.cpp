@@ -6,18 +6,20 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <iostream>
+#include <stdlib.h>
 #include "client.h"
 #include "gen_functions.h"
 #include "crypto.h"
 #include "constants.h"
  
 using namespace std;
-CryptoClient::CryptoClient(int p1, string h1, bool d1, string filename_pub, string filename_priv) {
+CryptoClient::CryptoClient(int p1, string h1, bool d1, string filename_pub, string filename_priv, string a_dir) {
 	port = p1;
 	host = h1;
 	debug = d1;
 	pub_key = read_keyfile(filename_pub);
   	priv_key = read_keyfile(filename_priv);
+  	accounts_dir = a_dir;
 	server_pub_key = "BLANK";
 }
 bool CryptoClient::init_connection() {
@@ -59,14 +61,23 @@ void CryptoClient::start_session() {
 		regex_search(command, login_match, login_regex);
 		if(login_match.size() == 2) {
 			act_str = login_match[1];
-			cout << act_str.size() << endl;
 		}
 		else {
 			continue;
 		}
+		string pin_str;
+		cout << "PIN> ";
+		fflush(stdout);
+		getline(cin, pin_str);
+		bool pin_test = check_pin(act_str, pin_str, accounts_dir);
+		if(!pin_test) {
+			cerr << "Incorrect PIN" << endl;
+			continue;
+		}
 		bool test = init_connection();
 		if(!test) {
-			cerr << "what?" << endl;
+			cerr << "Cannot connect to Bank." << endl;
+			exit(EXIT_FAILURE);
 		}
 		char * buf = new char[BUF_LEN];
 		string msg = "PUBKEY";
@@ -77,11 +88,7 @@ void CryptoClient::start_session() {
 		send(server, pub_key.c_str(), pub_key.size(), 0);
 		recv(server, buf, ENC_LEN, 0);
 		string received = decr_msg((unsigned char*) buf, priv_key);
-		if(received == "OK.") {
-			string pin_str;
-			cout << "PIN> ";
-			fflush(stdout);
-			getline(cin, pin_str);
+		if(received == "OK.") {			
 			string login_info;
 			login_info = act_str + ":" + pin_str;
 			char * login_info_enc = new char[ENC_LEN];
