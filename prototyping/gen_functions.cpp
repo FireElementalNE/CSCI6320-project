@@ -91,3 +91,9 @@ bool check_pin(string act, string pin, string a_dir) {
     int real_pin = atoi(p_str.c_str());
     return real_pin == p; 
 }
+bool check_port(int port) {
+    if(port < 1025 || port > 65535) {
+        return false;
+    }
+    return true;
+}

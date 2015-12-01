@@ -61,7 +61,7 @@ string decr_msg(unsigned char * msg, string priv_key) {
   if(result == -1) {
     cerr << "Private Decrypt failed " << endl;
     // error check
-    return "NULL";
+    return "NULL1";
   }
   string decr_str = string(decr);
   return decr_str;

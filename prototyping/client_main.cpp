@@ -1,24 +1,35 @@
 #include <iostream>
 #include <unistd.h>
 #include "client.h"
+#include "gen_functions.h"
+#include "constants.h"
 using namespace std;
 void print_usage(char * argv0);
 int main(int argc, char ** argv) {
-	int c;
-	int port = 5555;
+	if(argc < 2) {
+		print_usage(argv[0]);
+		exit(EXIT_SUCCESS);
+	}
+	char * port_safe = new char[MAX_PORT_LEN];
+	memset(port_safe, '\0', MAX_PORT_LEN);
+	strncpy(port_safe, argv[1], MAX_PORT_LEN * sizeof(char));
+	int port = atoi(port_safe); 
+	if(!check_port(port)) {
+		cerr << "invalid port." << endl;
+		print_usage(argv[0]);
+		exit(EXIT_FAILURE);
+	}
 	string host = "localhost";
 	bool debug = false;
 	string priv_key = "keys/private_client.pem";
 	string pub_key = "keys/public_client.pem";
 	string accounts_dir = "./accounts_atm/";
-	while ((c = getopt(argc, argv, "dhp:T:a:")) != -1) {
+	int c;
+	while ((c = getopt(argc, argv, "dhT:a:")) != -1) {
 		switch (c) {
 		case 'h':
 			print_usage(argv[0]);
 			exit(EXIT_SUCCESS);
-		case 'p':
-			port = atoi(optarg);
-			break;
 		case 'd':
 			debug = true;
 			break;
@@ -41,10 +52,10 @@ int main(int argc, char ** argv) {
 	client.close_connection();
 }
 void print_usage(char * argv0) {
-	cout << "usage: " << argv0 << " [-d] [-h] [-p port] [-T hostname] [-k private key] [-K public key] [-a accounts]" << endl;
+	cout << "usage: " << argv0 << " <port> [-d] [-h] [-T hostname] [-k private key] [-K public key] [-a accounts]" << endl;
+	cout << "\t port port to connect to (REQUIRED)" << endl;
 	cout << "\t-h help (show this menu)" << endl;
 	cout << "\t-d Debug flag" << endl;
 	cout << "\t-T hostname to connect to (DEFAULT: 'localhost')" << endl;
-	cout << "\t-p port to connect to (DEFAULT: 5555)" << endl;
 	cout << "\t-a account directory for atm (DEFAULT: ./accounts_atm/" << endl;
 }

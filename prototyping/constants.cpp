@@ -6,6 +6,7 @@ const int MAX_ACT_SIZE = 16;
 const int MAX_PIN_SIZE = 8;
 const int MAX_AMT_LEN = 16;
 const int RAND_PAD_LEN = 4;
+const int MAX_PORT_LEN = 5;
 const int MAX_FILENAME_LEN = 255; // max len for ext4
 const std::string ACT_FNAME_REGEX = "^(\\w+)\\.act$";
 const std::string OK_REGEX_STR = "^OK.$";

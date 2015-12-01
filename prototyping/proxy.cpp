@@ -10,34 +10,37 @@
 #include <iostream>
 #define MAXCONNECTIONS 5
 #define BUF_LEN 4096
-#define TRUE 1
-#define FALSE 0
+#define MAX_PORT_LEN 5
 using namespace std;
+bool check_port(int port);
 void process_connection(int sock_client, string server_host, int server_port, bool debug);
 void print_usage(char * argv0);
 int main(int argc, char ** argv) {
+	if(argc < 3) {
+		print_usage(argv[0]);
+		exit(EXIT_SUCCESS);
+	}
+	int proxy_port = atoi(argv[1]);
+	int server_port = atoi(argv[2]);
+	if(!check_port(proxy_port) || !check_port(server_port)) {
+		cerr << "invalid port." << endl;
+		print_usage(argv[0]);
+		exit(EXIT_FAILURE);
+	}
 	struct sockaddr_in proxy_addr, client_addr;
 	socklen_t clientlen = sizeof(proxy_addr);
 	int reuse = 1;
 	int proxy, client;
 	string proxy_host = "localhost";
 	string server_host = "localhost";
-	int proxy_port = 5555; 
-	int server_port = 5556;
-
+	
 	bool debug = false;
 	int c;
-	while ((c = getopt(argc, argv, "dhp:H:t:T:P:")) != -1) {
+	while ((c = getopt(argc, argv, "dht:T:")) != -1) {
 		switch (c) {
 		case 'h':
 			print_usage(argv[0]);
 			exit(EXIT_SUCCESS);
-		case 'p':
-			proxy_port = atoi(optarg);
-			break;
-		case 'P':
-			server_port = atoi(optarg);
-			break;
 		case 'd':
 			debug = true;
 			break;
@@ -108,12 +111,14 @@ int main(int argc, char ** argv) {
 	      process_connection(client, server_host, server_port, debug);
 	      exit(EXIT_SUCCESS);
 	    }
+	    else {
+	    	close(client);
+	    }
 	}
   	cout << "EXITING PROXY SERVER" << endl;
   	close(proxy);
 }
 void process_connection(int sock_client, string server_host, int server_port, bool debug) {
-	char * buf = new char[BUF_LEN+1];
 	struct sockaddr_in server_addr;
 	struct hostent * server_hostent;
 	server_hostent = gethostbyname(server_host.c_str());
@@ -137,6 +142,7 @@ void process_connection(int sock_client, string server_host, int server_port, bo
 		exit(EXIT_FAILURE);
 	}
 	while(1) {
+		char * buf = new char[BUF_LEN];
 		memset(buf, 0, BUF_LEN);
 		int nread = recv(sock_client, buf, BUF_LEN, 0);
 		if (nread == 0) {
@@ -144,34 +150,36 @@ void process_connection(int sock_client, string server_host, int server_port, bo
 			break;
 		}
 		else {
-			if(debug) {
-				cout << "DEBUG: got '" << buf << "' from client." << endl;
-			}
+			cout << "DEBUG: got '" << buf << "' from client." << endl;
 		}
 		// send a response
 		send(server, buf, nread, 0);
-		if(debug) {
-			cout << "DEBUG: sent '" << buf << "' to server." << endl;
-		}
+		cout << "DEBUG: sent '" << buf << "' to server." << endl;
 		// read the response
-		memset(buf,0,BUF_LEN);
-		recv(server,buf, BUF_LEN,0);
-		if(debug) {
-			cout << "DEBUG: got '" << buf << "' from server." << endl;
+		memset(buf,0, BUF_LEN);
+		nread = recv(server, buf, BUF_LEN, 0);
+		if (nread == 0) {
+			cout << "GOT a read length of 0, closing socket" << endl;
+			break;
 		}
-		send(sock_client, buf, BUF_LEN, 0);
-		if(debug) {
-			cout << "DEBUG: sent '" << buf << "' to client." << endl;
-		}
+		cout << "DEBUG: got '" << buf << "' from server." << endl;
+		send(sock_client, buf, nread, 0);
+		cout << "DEBUG: sent '" << buf << "' to client." << endl;
 	}
 	close(server);
 }
 void print_usage(char * argv0) {
-	cout << "usage: " << argv0 << " [-d] [-h] [-p port] [-H hostname]" << endl;
+	cout << "usage: " << argv0 << " <c_port> <s_port> [-d] [-h] [-p port] [-t hostname] [-T hostname]" << endl;
+	cout << "\t <c_port> client port (REQUIRED)" << endl;
+	cout << "\t <s_port> server port (REQUIRED)" << endl;
 	cout << "\t-h help (show this menu)" << endl;
 	cout << "\t-d Debug flag" << endl;
 	cout << "\t-t hostname of proxy (DEFAULT: 'localhost')" << endl;
 	cout << "\t-T hostname of server (DEFAULT: 'localhost')" << endl;
-	cout << "\t-p port for proxy (DEFAULT: 5556)" << endl;
-	cout << "\t-P port for server (DEFAULT: 5555)" << endl;
+}
+bool check_port(int port) {
+    if(port < 1025 || port > 65535) {
+        return false;
+    }
+    return true;
 }

@@ -242,6 +242,7 @@ void CryptoServer::process_connection(int sock) {
         }
         bank.unlock_act(act, pin);
         close(sock);
+        exit(EXIT_SUCCESS);
       }
     }
     else {
