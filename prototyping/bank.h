@@ -6,19 +6,19 @@
 using namespace std;
 class Bank {
 private:
-	string filename;
 	vector <account> bank_accounts;
-	void init_accounts(string fname);
+	void init_accounts(string accounts_dir);
 public:
 	Bank() {}
-	Bank(string fname);
-	bool is_an_account(int an);
+	Bank(string accounts_dir);
+	bool is_an_account(string an);
 	void load_bank();
-	bool lookup_account(int an, int p);
-	bool deposit(int an, int p, int amount);
-	int balance_inq(int an, int p);
-	bool withdraw(int an, int p, int amount);
-	bool transfer(int an, int p, int t_account, int amount);
-	void write_accounts();
+	bool lookup_account(string an, int p);
+	bool deposit(string an, int p, int amount);
+	int balance_inq(string an, int p);
+	bool withdraw(string an, int p, int amount);
+	bool transfer(string an, int p, string t_account, int amount);
+	bool lock_act(string an, int p);
+	bool unlock_act(string an, int p);
 };
 #endif /* BANK_H */

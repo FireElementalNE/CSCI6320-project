@@ -4,24 +4,24 @@
 using namespace std;
 class account {
 private:
-	int account_num;
+	string account_name;
+	string account_filename;
+	string lock_filename;
 	int pin;
 	int balance;
-	bool logged_in;
-	bool locked;
+	void reset_vars();
+	string account_str();
 public:
-	account(int an, char * p, int b, bool lock);
-	bool check_creds(int an, int p);
+	account(string an, string accounts_dir);
+	bool load_account();
+	bool save_account();
+	bool check_creds(string an, int p);
 	bool check_creds_act(account act);
 	bool deposit(int amount);
 	bool withdraw(int amount);
 	int get_balance();
 	bool is_locked();
-	void lock();
-	void login();
-	void logout();
-	bool is_logged_in();
-	bool chk_account(int an);
-	string account_str();
+	bool check_file();
+	bool chk_account(string an);
 };
 #endif /* ACCOUNT_H */

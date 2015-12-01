@@ -9,12 +9,12 @@ extern const int MAX_ACT_SIZE;
 extern const int MAX_PIN_SIZE;
 extern const int MAX_AMT_LEN;
 extern const int RAND_PAD_LEN;
-// TODO: use random numbers with server msgs
+extern const int MAX_FILENAME_LEN;
+extern const std::string CARD_FNAME_REGEX;
 extern const std::string OK_REGEX_STR;
 extern const std::string FAIL_REGEX_STR;
 extern const std::string SUCCESS_REGEX_STR;
 extern const std::string EXIT_REGEX_STR;
-// END TODO
 extern const std::string ACT_REGEX_STR;
 extern const std::string TRANS_REGEX_STR_NON_BALANCE_TRANSFER;
 extern const std::string TRANS_REGEX_STR_BALANCE;

@@ -6,6 +6,9 @@
 #include <fstream>
 #include <iostream>
 #include <locale> 
+#include <dirent.h>
+#include <regex>
+#include <sys/stat.h>
 #include "constants.h"
 using namespace std;
 char * str_to_char_ptr_safe(string s, int max_len) {
@@ -42,4 +45,30 @@ string to_lower(string s){
         out += tolower(s[i]);
     }
     return out;
+}
+// https://techoverflow.net/blog/2013/08/21/how-to-check-if-file-exists-using-stat/
+bool file_exists(const string& file) {
+    struct stat buf;
+    return (stat(file.c_str(), &buf) == 0);
+}
+vector <string> get_account_names(string account_dir) {
+    vector <string> accounts;
+    DIR *dir;
+    struct dirent *ent;
+    if ((dir = opendir(account_dir.c_str())) != NULL) {
+        while((ent = readdir (dir)) != NULL) {
+            char * tmp_name = new char[MAX_FILENAME_LEN];
+            memset(tmp_name, '\0', MAX_FILENAME_LEN * sizeof(char));
+            strncpy(tmp_name, ent->d_name, MAX_FILENAME_LEN);
+            string f_name(tmp_name);
+            regex file_name_regex(CARD_FNAME_REGEX);
+            smatch file_name_match;
+            regex_search(f_name, file_name_match, file_name_regex);
+            if(file_name_match.size() == 2) {
+                accounts.push_back(file_name_match[1]);    
+            }
+        }
+        closedir (dir);
+    }
+    return accounts;
 }

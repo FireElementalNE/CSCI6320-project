@@ -184,7 +184,6 @@ void CryptoClient::start_session() {
 							continue;
 						}
 						char * command_enc = new char[ENC_LEN];					
-						memset( command_enc, '0', sizeof(char)*ENC_LEN );
 						command_enc = encr_msg((unsigned char *)payload.c_str(), payload.size(), server_pub_key);
 						send(server, command_enc, ENC_LEN, 0);
 						recv(server, server_resp, ENC_LEN, 0);
@@ -202,9 +201,7 @@ void CryptoClient::start_session() {
 						int length = 2 + RAND_PAD_LEN;
 						string payload = "B:";
 						char * command_enc = new char[ENC_LEN];
-						char * tester = new char[payload.size()];
-						strncpy(tester, payload.c_str(), payload.size());
-						command_enc = encr_msg((unsigned char *)tester, payload.size(), server_pub_key);
+						command_enc = encr_msg((unsigned char *)payload.c_str(), payload.size(), server_pub_key);
 						cout << payload << " " << payload.size() << " " << length << endl;
 						send(server, command_enc, ENC_LEN, 0);
 						recv(server, server_resp, ENC_LEN, 0);
