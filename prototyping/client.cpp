@@ -77,15 +77,13 @@ void CryptoClient::start_session() {
 		send(server, pub_key.c_str(), pub_key.size(), 0);
 		recv(server, buf, ENC_LEN, 0);
 		string received = decr_msg((unsigned char*) buf, priv_key);
-		string random_additive;
 		if(received == "OK.") {
 			string pin_str;
 			cout << "PIN> ";
 			fflush(stdout);
 			getline(cin, pin_str);
 			string login_info;
-			random_additive = get_rand_padding();
-			login_info = act_str + ":" + pin_str + ":" + random_additive;
+			login_info = act_str + ":" + pin_str;
 			char * login_info_enc = new char[ENC_LEN];
 			login_info_enc = encr_msg_str(login_info, login_info.size(), server_pub_key);
 			send(server, login_info_enc, ENC_LEN, 0);
@@ -140,8 +138,7 @@ void CryptoClient::start_session() {
 					}
 					if(action == 1) {
 						char * server_resp = new char[ENC_LEN];
-						random_additive = get_rand_padding();
-						string payload = "W:" + amount_str + ":" + random_additive;
+						string payload = "W:" + amount_str;
 						if(amount_str.size() > MAX_AMT_LEN) {
 							cerr << "NOPE!" << endl;
 							continue;
@@ -161,8 +158,7 @@ void CryptoClient::start_session() {
 					}
 					else if(action == 2) {
 						char * server_resp = new char[ENC_LEN];
-						random_additive = get_rand_padding();
-						string payload = "D:" + amount_str + ":" + random_additive;
+						string payload = "D:" + amount_str;
 						if(amount_str.size() > MAX_AMT_LEN) {
 							cerr << "NOPE!" << endl;
 							continue;
@@ -182,8 +178,7 @@ void CryptoClient::start_session() {
 					}
 					else if(action == 3) {
 						char * server_resp = new char[ENC_LEN];
-						random_additive = get_rand_padding();
-						string payload = "T:" + amount_str + ":" + t_account + ":" + random_additive;
+						string payload = "T:" + amount_str + ":" + t_account;
 						if(amount_str.size() > MAX_AMT_LEN || t_account.size() > MAX_ACT_SIZE) {
 							cerr << "NOPE!" << endl;
 							continue;
@@ -205,8 +200,7 @@ void CryptoClient::start_session() {
 					else if(action == 4) {
 						char * server_resp = new char[ENC_LEN];
 						int length = 2 + RAND_PAD_LEN;
-						random_additive = get_rand_padding();
-						string payload = "B:" + random_additive;
+						string payload = "B:";
 						char * command_enc = new char[ENC_LEN];
 						command_enc = encr_msg((unsigned char *)payload.c_str(), payload.size(), server_pub_key);
 						cout << payload << " " << payload.size() << " " << length << endl;

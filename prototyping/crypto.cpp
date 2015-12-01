@@ -104,9 +104,3 @@ char * encr_msg_int(int msg_int, int max_size, string pub_key) {
   strncpy(msg, msg_str.c_str(), msg_str.size());
   return encr_msg((unsigned char*)msg, msg_len, pub_key);
 }
-string get_rand_padding() {
-  srand (time(NULL));
-  int z = rand() % 8999 + 1000;
-  string out_str = to_string(z);
-  return out_str;
-}

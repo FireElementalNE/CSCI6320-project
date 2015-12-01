@@ -3,7 +3,6 @@
 #include "crypto.h"
 #include "account.h"
 #include "gen_functions.h"
-#include <openssl/sha.h>
 using namespace std;
 account::account(int an, char * p, int b, bool lock) {
 	account_num = an;
