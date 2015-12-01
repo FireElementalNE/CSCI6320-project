@@ -139,7 +139,7 @@ void CryptoClient::start_session() {
 					if(action == 1) {
 						char * server_resp = new char[ENC_LEN];
 						string payload = "W:" + amount_str;
-						if(amount_str.size() > MAX_AMT_LEN) {
+						if(amount_str.size() > (unsigned int)MAX_AMT_LEN) {
 							cerr << "NOPE!" << endl;
 							continue;
 						}
@@ -159,7 +159,7 @@ void CryptoClient::start_session() {
 					else if(action == 2) {
 						char * server_resp = new char[ENC_LEN];
 						string payload = "D:" + amount_str;
-						if(amount_str.size() > MAX_AMT_LEN) {
+						if(amount_str.size() > (unsigned int)MAX_AMT_LEN) {
 							cerr << "NOPE!" << endl;
 							continue;
 						}
@@ -179,7 +179,7 @@ void CryptoClient::start_session() {
 					else if(action == 3) {
 						char * server_resp = new char[ENC_LEN];
 						string payload = "T:" + amount_str + ":" + t_account;
-						if(amount_str.size() > MAX_AMT_LEN || t_account.size() > MAX_ACT_SIZE) {
+						if(amount_str.size() > (unsigned int)MAX_AMT_LEN || t_account.size() > (unsigned int)MAX_ACT_SIZE) {
 							cerr << "NOPE!" << endl;
 							continue;
 						}
@@ -202,9 +202,10 @@ void CryptoClient::start_session() {
 						int length = 2 + RAND_PAD_LEN;
 						string payload = "B:";
 						char * command_enc = new char[ENC_LEN];
-						command_enc = encr_msg((unsigned char *)payload.c_str(), payload.size(), server_pub_key);
+						char * tester = new char[payload.size()];
+						strncpy(tester, payload.c_str(), payload.size());
+						command_enc = encr_msg((unsigned char *)tester, payload.size(), server_pub_key);
 						cout << payload << " " << payload.size() << " " << length << endl;
-						payload[payload.size()] = '\0';
 						send(server, command_enc, ENC_LEN, 0);
 						recv(server, server_resp, ENC_LEN, 0);
 						string response = decr_msg((unsigned char*)server_resp, priv_key);

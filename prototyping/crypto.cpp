@@ -56,19 +56,22 @@ string decr_msg(unsigned char * msg, string priv_key) {
   strncpy(key, priv_key.c_str(), priv_key.size());
   RSA * rsa = create_rsa_priv(key);
   char * decr = new char[BUF_LEN];
+  memset(decr, '\0', BUF_LEN * sizeof(char));
   int result = private_decrypt(rsa, msg, ENC_LEN, (unsigned char*)key, (unsigned char*)decr);
   if(result == -1) {
     cerr << "Private Decrypt failed " << endl;
     // error check
     return "NULL";
   }
-  return (string)decr;
+  string decr_str = string(decr);
+  return decr_str;
 }
 char * encr_msg(unsigned char * msg, int msg_len, string pub_key) {
 	char * key = new char[BUF_LEN];
 	strncpy(key, pub_key.c_str(), pub_key.size());
 	RSA * rsa = create_rsa_pub(key);
 	char * enc = new char[ENC_LEN];
+  memset(enc, '\0', ENC_LEN * sizeof(char));
 	int result = public_encrypt(rsa, msg, msg_len, (unsigned char*)key, (unsigned char *)enc);
 	if(result == -1) {
 		cerr << "Public Encrypt failed " << endl;
@@ -87,6 +90,7 @@ char * encr_msg_str(string msg_str, int max_size, string pub_key) {
     msg_len = msg_str.size();
   }
   char * msg = new char[ENC_LEN];
+  memset(msg, '\0', ENC_LEN * sizeof(char));
   strncpy(msg, msg_str.c_str(), msg_str.size());
   return encr_msg((unsigned char*)msg, msg_len, pub_key);
 }
@@ -101,6 +105,7 @@ char * encr_msg_int(int msg_int, int max_size, string pub_key) {
     msg_len = msg_str.size();
   }
   char * msg = new char[ENC_LEN];
+  memset(msg, '\0', ENC_LEN * sizeof(char));
   strncpy(msg, msg_str.c_str(), msg_str.size());
   return encr_msg((unsigned char*)msg, msg_len, pub_key);
 }

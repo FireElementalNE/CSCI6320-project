@@ -210,7 +210,6 @@ void CryptoServer::process_connection(int sock) {
           }
           else if(trans_regex_balance_result.size() == 1) {
             int amount = bank.balance_inq(act, pin);
-            cout << "got here" << endl;
             if(amount != -1) {
               cout << "Balance Inquery successful." << endl;
               char * new_balance_enc = new char[ENC_LEN];
