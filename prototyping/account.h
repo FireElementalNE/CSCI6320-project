@@ -9,8 +9,6 @@ private:
 	int balance;
 	bool logged_in;
 	bool locked;
-	bool check_account_num();
-	bool check_pin(int i);
 public:
 	account(int an, char * p, int b, bool lock);
 	bool check_creds(int an, int p);
@@ -23,5 +21,7 @@ public:
 	void login();
 	void logout();
 	bool is_logged_in();
+	bool chk_account(int an);
+	string account_str();
 };
 #endif /* ACCOUNT_H */

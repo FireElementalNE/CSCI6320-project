@@ -1,9 +1,3 @@
-#include <openssl/pem.h>
-#include <openssl/ssl.h>
-#include <openssl/rsa.h>
-#include <openssl/evp.h>
-#include <openssl/bio.h>
-#include <openssl/err.h>
 #include <arpa/inet.h>
 #include <errno.h>
 #include <netdb.h>
@@ -16,6 +10,7 @@
 #include "gen_functions.h"
 #include "crypto.h"
 #include "constants.h"
+ 
 using namespace std;
 CryptoClient::CryptoClient(int p1, string h1, bool d1, string filename_pub, string filename_priv) {
 	port = p1;
@@ -50,123 +45,198 @@ bool CryptoClient::init_connection() {
 		perror("connect");
 		return false;
 	}
-	get_public_key();
-
 	return true;
 }
-string CryptoClient::send_recv_msg(string msg) {
-	char * buf = new char[BUF_LEN + 1];
-	if(msg.size() > 0) {
-	    // write the data to the server
-	    char * new_msg = new char[msg.size()];
-	    char * enc_msg = new char[ENC_LEN];
-	    strncpy(new_msg, msg.c_str(), msg.size());
-	    enc_msg = encr_msg((unsigned char *) new_msg, msg.size(), server_pub_key);
-		send(server, enc_msg, BUF_LEN, 0);
-		if(debug) {
-			string hex_tmp = raw_to_hex((unsigned char *)enc_msg, ENC_LEN);
-			cout << "DEBUG: sent '" << hex_tmp << "' to server." << endl;
+void CryptoClient::start_session() {
+	string command;
+	string pin_str, act_str;
+	do {
+		fflush(stdout);
+		regex login_regex(LOGIN_REGEX_STR);
+		cout << "login> ";
+		getline(cin, command);
+		smatch login_match;
+		regex_search(command, login_match, login_regex);
+		if(login_match.size() == 2) {
+			act_str = login_match[1];
+			cout << act_str.size() << endl;
 		}
-	    // read the response
-		memset(buf,0,BUF_LEN);
+		else {
+			continue;
+		}
+		bool test = init_connection();
+		if(!test) {
+			cerr << "what?" << endl;
+		}
+		char * buf = new char[BUF_LEN];
+		string msg = "PUBKEY";
+		send(server, msg.c_str(), msg.length(), 0);
 		recv(server, buf, BUF_LEN, 0);
-		string received = decr_msg((unsigned char*) buf, priv_key);
-		if(received == "") {
-			cerr << "ERROR: decryption failed. Sorry." << endl;
-		}
-	    // print the response
-		if(debug) {
-			string hex_tmp = raw_to_hex((unsigned char *)buf, ENC_LEN);
-			cout << "DEBUG: got '" << hex_tmp << "' from server." << endl;
-		}
-		return received;
-	}
-	else {
-		cerr << "ERROR: empty line." << endl;
-		return "";
-	}
-}
-
-void CryptoClient::get_public_key() {
-	char * buf = new char[BUF_LEN];
-	string msg = "PUBKEY";
-	send(server, msg.c_str(), msg.length(), 0);
-	// this might work (using pub_key.size() instead of BUF_LEN)
-	recv(server, buf, BUF_LEN, 0);
-	server_pub_key = (string)buf;
-	cout << "Secure Connection Established." << endl;
-	send(server, pub_key.c_str(), pub_key.size(), 0);
-	recv(server, buf, ENC_LEN, 0);
-	string received = decr_msg((unsigned char*) buf, priv_key);
-	if(received == "OK.") {
-		string pin_str, act_str;
-		cout << "Enter Account #: ";
-		cin >> act_str;
-		cout << "Enter Pin: ";
-		cin >> pin_str;
-		char * act_char = new char[MAX_ACT_SIZE];
-		char * pin_char = new char[MAX_PIN_SIZE];
-		char * login_info = new char[MAX_ACT_SIZE + SHA_DIGEST_LENGTH];
-		strncpy(act_char, act_str.c_str(), MAX_ACT_SIZE);
-		strncpy(pin_char, pin_str.c_str(), MAX_PIN_SIZE);
-		strcat(login_info, act_char);
-		strcat(login_info, ":");
-		strcat(login_info, pin_char);
-		// char * act_enc = new char[ENC_LEN];
-		// char * pin_enc = new char[ENC_LEN];
-		// act_enc = encr_msg((unsigned char*)act_char, act_str.size(), server_pub_key);
-		// pin_enc = encr_msg((unsigned char*)pin_char, SHA_DIGEST_LENGTH, server_pub_key);
-		// send(server, act_enc, ENC_LEN, 0);
-		cout << login_info << endl;
-		char * login_info_enc = new char[ENC_LEN];
-		login_info_enc = encr_msg((unsigned char *)login_info, act_str.size() + SHA_DIGEST_LENGTH, server_pub_key);
-		send(server, login_info_enc, ENC_LEN, 0);
+		server_pub_key = (string)buf;
+		cout << "Secure Connection Established." << endl;
+		send(server, pub_key.c_str(), pub_key.size(), 0);
 		recv(server, buf, ENC_LEN, 0);
 		string received = decr_msg((unsigned char*) buf, priv_key);
-		char * command_enc;
-		if(received != "FAILURE."){
-			string command = "";
-			do {
-				command_enc = new char[ENC_LEN];
-				cout << "Welcome " << received << "!" << endl;
-				cout << "Main Menu: " << endl;
-				cout << "[1] Withdraw" << endl;
-				cout << "[2] balance" << endl;
-				cout << "[3] logout" << endl;
-				cout << ">";
-				cin >> command;
-				int command_int = atoi(command.c_str());
-				if(command_int != 1 && command_int != 2 && command_int != 3) {
-					cerr << "Invalid choice." << endl;
-				}
-				else {
-					if(command_int == 1) {
+		string random_additive;
+		if(received == "OK.") {
+			string pin_str;
+			cout << "PIN> ";
+			fflush(stdout);
+			getline(cin, pin_str);
+			string login_info;
+			random_additive = get_rand_padding();
+			login_info = act_str + ":" + pin_str + ":" + random_additive;
+			char * login_info_enc = new char[ENC_LEN];
+			login_info_enc = encr_msg_str(login_info, login_info.size(), server_pub_key);
+			send(server, login_info_enc, ENC_LEN, 0);
+			recv(server, buf, ENC_LEN, 0);
+			string received = decr_msg((unsigned char*) buf, priv_key);
+			// char * command_enc;
+			if(received != "FAILURE."){
+				string command_act = "";
+				do {
+					// command_enc = new char[ENC_LEN];
+					cout << "action> ";
+					getline(cin, command_act);
+					command_act = to_lower(command_act);
+					smatch withdraw_match;
+					smatch deposit_match;
+					smatch transfer_match;
+					smatch balance_match;
+					smatch exit_match;
+					regex withdraw_regex(WITHDRAW_REGEX_STR);
+					regex deposit_regex(DEPOSIT_REGEX_STR);
+					regex transfer_regex(TRANSFER_REGEX_STR);
+					regex balance_regex(BALANCE_REGEX_STR);
+					regex exit_regex(EXIT_REGEX_STR_CMD);
+					regex_search(command_act, withdraw_match, withdraw_regex);
+					regex_search(command_act, deposit_match, deposit_regex);
+					regex_search(command_act, transfer_match, transfer_regex);
+					regex_search(command_act, balance_match, balance_regex);
+					regex_search(command_act, exit_match, exit_regex);
+					int action = 0;
+					string amount_str, t_account;
+					if(withdraw_match.size() == 2) {
+						action = 1;
+						amount_str = withdraw_match[1];
+					}
+					else if(deposit_match.size() == 2) {
+						action = 2;
+						amount_str = deposit_match[1];
+					}
+					else if(transfer_match.size() == 3) {
+						action = 3;
+						amount_str = transfer_match[1];
+						t_account = transfer_match[2];
+					}
+					else if(balance_match.size() == 1) {
+						action = 4;
+					}
+					else if(exit_match.size() == 1) {
+						action = 5;
+					}
+					else {
+						action = -1;
+					}
+					if(action == 1) {
 						char * server_resp = new char[ENC_LEN];
-						// for buffer overflow
-						char * payload_safe = new char[MAX_AMT_LEN];
-						string amount_str;
-						cout << "Amount>";
-						cin >> amount_str;
-						string payload = "W:" + amount_str;
-						strncpy(payload_safe, payload.c_str(), MAX_AMT_LEN + 2);
-						command_enc = encr_msg((unsigned char *)payload_safe, strlen(payload_safe), server_pub_key);
+						random_additive = get_rand_padding();
+						string payload = "W:" + amount_str + ":" + random_additive;
+						if(amount_str.size() > MAX_AMT_LEN) {
+							cerr << "NOPE!" << endl;
+							continue;
+						}
+						char * command_enc = new char[ENC_LEN];
+						command_enc = encr_msg((unsigned char *)payload.c_str(), payload.size(), server_pub_key);
 						send(server, command_enc, ENC_LEN, 0);
 						recv(server, server_resp, ENC_LEN, 0);
 						string response = decr_msg((unsigned char*)server_resp, priv_key);
-						cout << "server: " << response << endl;
+						if(response != "FAILURE.") {
+							cout << "Withdrawl of " << amount_str << " successful." << endl;	
+							cout << "New Balance of " << response << "." << endl;
+						}
+						else {
+							cout << "Withdrawl of " << amount_str << " unsuccessful, insufficient funds." << endl;
+						}
 					}
-					
+					else if(action == 2) {
+						char * server_resp = new char[ENC_LEN];
+						random_additive = get_rand_padding();
+						string payload = "D:" + amount_str + ":" + random_additive;
+						if(amount_str.size() > MAX_AMT_LEN) {
+							cerr << "NOPE!" << endl;
+							continue;
+						}
+						char * command_enc = new char[ENC_LEN];					
+						command_enc = encr_msg((unsigned char *)payload.c_str(), payload.size(), server_pub_key);
+						send(server, command_enc, ENC_LEN, 0);
+						recv(server, server_resp, ENC_LEN, 0);
+						string response = decr_msg((unsigned char*)server_resp, priv_key);
+						if(response != "FAILURE.") {
+							cout << "Deposit of " << amount_str << " successful." << endl;	
+							cout << "New Balance of " << response << "." << endl;
+						}
+						else {
+							cout << "Deposit of " << amount_str << " unsuccessful, insufficient funds." << endl;
+						}
+					}
+					else if(action == 3) {
+						char * server_resp = new char[ENC_LEN];
+						random_additive = get_rand_padding();
+						string payload = "T:" + amount_str + ":" + t_account + ":" + random_additive;
+						if(amount_str.size() > MAX_AMT_LEN || t_account.size() > MAX_ACT_SIZE) {
+							cerr << "NOPE!" << endl;
+							continue;
+						}
+						char * command_enc = new char[ENC_LEN];					
+						memset( command_enc, '0', sizeof(char)*ENC_LEN );
+						command_enc = encr_msg((unsigned char *)payload.c_str(), payload.size(), server_pub_key);
+						send(server, command_enc, ENC_LEN, 0);
+						recv(server, server_resp, ENC_LEN, 0);
+						string response = decr_msg((unsigned char*)server_resp, priv_key);
+						if(response != "FAILURE.") {
+							cout << "Transfer of " << amount_str << " successful." << endl;	
+							cout << "New Balance of " << response << "." << endl;
+						}
+						else {
+							cout << "Transfer of " << amount_str << " unsuccessful, insufficient funds." << endl;
+						}
+					}
+					else if(action == 4) {
+						char * server_resp = new char[ENC_LEN];
+						int length = 2 + RAND_PAD_LEN;
+						random_additive = get_rand_padding();
+						string payload = "B:" + random_additive;
+						char * command_enc = new char[ENC_LEN];
+						command_enc = encr_msg((unsigned char *)payload.c_str(), payload.size(), server_pub_key);
+						cout << payload << " " << payload.size() << " " << length << endl;
+						payload[payload.size()] = '\0';
+						send(server, command_enc, ENC_LEN, 0);
+						recv(server, server_resp, ENC_LEN, 0);
+						string response = decr_msg((unsigned char*)server_resp, priv_key);
+						if(response != "FAILURE.") {	
+							cout << "Current Balance is " << response << "." << endl;
+						}
+						else {
+							cout << "Could not retrieve current balance" << endl;
+						}
+					}
+					else if(action == 5) {
+						break;
+					}
+					else {
+						cerr << "Invalid choice." << endl;	
+					}					
 				}
-
+				while(command_act != "exit");
+				cout << "logging you out." << endl;
+				char * exit_command_enc = new char[ENC_LEN];
+				exit_command_enc = encr_msg_str("EXIT.", ENC_LEN, server_pub_key);
+				send(server, exit_command_enc, ENC_LEN, 0);
+				close(server);
 			}
-			while(command != "exit");
-			char * exit_command = new char[5];
-			char * exit_command_enc = new char[ENC_LEN];
-			strncpy(exit_command, "EXIT.", 5);
-			exit_command_enc = encr_msg((unsigned char *)exit_command, 5, server_pub_key);
-			send(server, exit_command_enc, ENC_LEN, 0);
 		}
-	}
+	} while(command != "exit");
 }
 void CryptoClient::close_connection() {
 	close(server);

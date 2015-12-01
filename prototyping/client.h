@@ -19,13 +19,11 @@ private:
 	int server;
 	string server_pub_key;
 	void get_public_key();
-	// string decr_msg(unsigned char * msg);
+	bool init_connection();
 public:
 	bool debug;
-	bool init_connection();
+	void start_session();
 	CryptoClient(int p1, string h1, bool d1, string filename_pub, string filename_priv);
-	string send_recv_msg(string msg);
 	void close_connection();
-	// void send_encr_msg(unsigned char * msg, int msg_len);
 };
 #endif /* CLIENT_H */

@@ -13,15 +13,9 @@ account::account(int an, char * p, int b, bool lock) {
 }
 bool account::check_creds(int an, int p) {
 	if(account_num != an) {
-		/*cout << "account mismatch" << endl;
-		cout << "\t\'" << account_num << "\'" << endl;
-		cout << "\t\'" << an << "\'" << endl;*/
 		return false;
 	}
 	if(pin != p) {
-		/*cout << "pin mismatch" << endl;
-		cout << "\t" << pin << endl;
-		cout << "\t" << p << endl;*/
 		return false;
 	}
 	return true;
@@ -63,4 +57,10 @@ void account::logout() {
 }
 bool account::is_logged_in() {
 	return logged_in;
+}
+bool account::chk_account(int an) {
+	return an == account_num;
+}
+string account::account_str() {
+	return to_string(account_num) + " " + to_string(pin) + " " + to_string(balance) + " " + to_string(0);
 }

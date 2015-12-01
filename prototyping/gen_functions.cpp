@@ -4,6 +4,8 @@
 #include <iomanip>
 #include <sstream>
 #include <fstream>
+#include <iostream>
+#include <locale> 
 #include "constants.h"
 using namespace std;
 char * str_to_char_ptr_safe(string s, int max_len) {
@@ -11,7 +13,7 @@ char * str_to_char_ptr_safe(string s, int max_len) {
         return NULL;
     }
     char * out = new char[s.size()];
-    strncpy(out, s.c_str(), s.size());
+    memcpy(out, s.c_str(), s.size());
     return out;
 }
 string raw_to_hex(unsigned char * bs, unsigned int n) {
@@ -33,4 +35,11 @@ string read_keyfile(string filename) {
     string str((istreambuf_iterator<char>(file)), istreambuf_iterator<char>());
     file.close();
     return str;
+}
+string to_lower(string s){
+    string out = "";
+    for(unsigned int i = 0; i < s.size(); i++) {
+        out += tolower(s[i]);
+    }
+    return out;
 }

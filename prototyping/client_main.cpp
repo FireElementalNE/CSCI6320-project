@@ -33,17 +33,7 @@ int main(int argc, char ** argv) {
 		}
 	}
 	CryptoClient client = CryptoClient(port, host, debug, pub_key, priv_key);
-	bool test = client.init_connection();
-	if(!test) {
-		cerr << "what?" << endl;
-	}
-	// allocate buffer
-  	// read a line from standard input
-	/*string line;
-	while (getline(cin,line)) {
-		string resp = client.send_recv_msg(line);
-		cout << "GOT: " << resp << endl;;
-	}*/
+	client.start_session();
 	client.close_connection();
 }
 void print_usage(char * argv0) {
