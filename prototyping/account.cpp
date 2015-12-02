@@ -1,5 +1,5 @@
 #include <iostream>
-#include <string.h>
+#include <cstring>
 #include <fstream>
 #include "crypto.h"
 #include "account.h"
@@ -51,15 +51,7 @@ bool account::save_account() {
 		return false;
 	}
 	remove(lock_filename.c_str());
-	remove(account_filename.c_str());
-	ofstream file;
-	file.open(account_filename);
-	if(!file.is_open()) {
-		cerr << "account " << account_name << "-> this is bad..." << endl;
-		exit(EXIT_FAILURE);
-	}
-	file << account_str() << endl;
-	file.close();
+	save_changes();
 	reset_vars();
 	return true;
 }
@@ -93,7 +85,9 @@ bool account::withdraw(string an, int p, int amount) {
 		return false;
 	}
 	else {
+		read_changes();
 		balance = balance - amount;
+		save_changes();
 		return true;
 	}
 }
@@ -102,7 +96,9 @@ bool account::deposit(int amount) {
 		cerr << "account " << account_name << "-> deposit: unsuccessful account not locked." << endl;
 		return false;
 	}
+	read_changes();
 	balance += amount;
+	save_changes();
 	return true;
 }
 int account::get_balance(string an, int p) {
@@ -114,6 +110,7 @@ int account::get_balance(string an, int p) {
 		cerr << "account " << account_name << "-> get_balance: bad credentials." << endl;
 		return false;
 	}
+	read_changes();
 	return balance;
 }
 bool account::is_locked() {
@@ -124,4 +121,36 @@ bool account::chk_account(string an) {
 }
 string account::account_str() {
 	return to_string(pin) + " " + to_string(balance);
+}
+void account::save_changes() {
+	if(!is_locked()) {
+		cerr << "account " << account_name << "-> save_changes: account not locked." << endl;
+		return;
+	}
+	remove(account_filename.c_str());
+	ofstream file;
+	file.open(account_filename);
+	if(!file.is_open()) {
+		cerr << "account " << account_name << "-> this is bad..." << endl;
+		exit(EXIT_FAILURE);
+	}
+	file << account_str() << endl;
+	file.close();
+}
+void account::read_changes() {
+	if(!is_locked()) {
+		cerr << "account " << account_name << "-> read_changes: account not locked." << endl;
+		return;
+	}
+  	ifstream file_in;
+	file_in.open(account_filename);
+	if(!file_in.is_open()) {
+		cerr << "could not open account." << endl;
+		exit(EXIT_FAILURE);
+	}
+	string old_balance;
+	string pin;
+	file_in >> pin >> old_balance;
+	balance = atoi(old_balance.c_str());
+	file_in.close();
 }

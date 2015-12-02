@@ -10,6 +10,8 @@ private:
 	int balance;
 	void reset_vars();
 	std::string account_str();
+	void save_changes();
+	void read_changes();
 public:
 	account(std::string an, std::string accounts_dir);
 	std::string get_an();
@@ -22,5 +24,6 @@ public:
 	bool is_locked();
 	bool check_file();
 	bool chk_account(std::string an);
+
 };
 #endif /* ACCOUNT_H */

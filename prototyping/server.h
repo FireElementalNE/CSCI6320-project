@@ -26,11 +26,13 @@ private:
 	void send_public_key(int sock);
 	string setup_keys();
 	Bank bank;
+	string accounts_dir;
 public:
 	string mac_keys_filename;
 	void send_response(string response);
 	CryptoServer() {}
-	CryptoServer(int p1, string h1, bool d1, string filename_pub, string filename_priv, string accounts_dir, string mcf);
+	CryptoServer(int p1, string h1, bool d1, string filename_pub, string filename_priv, string a_dir, string mcf);
 	bool start_server();
+	void start_terminal(int child_pid);
 };
 #endif /* SERVER_H */

@@ -1,5 +1,6 @@
 #include <iostream>
 #include <unistd.h>
+#include <fstream>
 #include "server.h"
 #include "gen_functions.h"
 #include "constants.h"
@@ -53,7 +54,23 @@ int main(int argc, char ** argv) {
 		}
 	}
 	CryptoServer server = CryptoServer(port, host, debug, pub_key, priv_key, accounts_dir, mac_keys);
-	server.start_server();
+	int pid = fork();
+	if(pid < 0) {
+    		perror("fork");
+    		exit(EXIT_FAILURE);
+  	}
+  	if(pid == 0) {
+  		ofstream log_file("log_file.log");
+	    // streambuf * cerrbuf = cerr.rdbuf(); //save old buf
+	    cerr.rdbuf(log_file.rdbuf()); //redirect std::cin to in.txt!
+	    // streambuf * coutbuf = cout.rdbuf(); //save old buf
+	    cout.rdbuf(log_file.rdbuf()); //redirect std::cout to out.txt!
+    	server.start_server();
+  	}
+  	else {
+  		server.start_terminal(pid);
+  	}
+	
 }
 void print_usage(char * argv0) {
   cout << "usage: " << argv0 << " <port> [-d] [-h] [-H hostname] [-k private key] [-K public key] [-a accounts_dir] [-m mac_keys]" << endl;

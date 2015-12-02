@@ -1,6 +1,8 @@
 #include <arpa/inet.h>
-#include <string.h>
+#include <cstring>
 #include <sys/socket.h>
+#include <sys/types.h>
+#include <signal.h>
 #include <unistd.h>
 #include <iostream>
 #include <fstream>
@@ -11,7 +13,7 @@
 #include "bank.h"
 #include "constants.h"
 using namespace std;
-CryptoServer::CryptoServer(int p1, string h1, bool d1, string filename_pub, string filename_priv, string accounts_dir, string mcf) {
+CryptoServer::CryptoServer(int p1, string h1, bool d1, string filename_pub, string filename_priv, string a_dir, string mcf) {
 	port = p1;
 	host = h1;
 	debug = d1;
@@ -20,7 +22,8 @@ CryptoServer::CryptoServer(int p1, string h1, bool d1, string filename_pub, stri
 	clientlen = sizeof(client_addr);
   pub_key = read_keyfile(filename_pub);
   priv_key = read_keyfile(filename_priv);
-  bank = Bank(accounts_dir);
+  accounts_dir = a_dir;
+  bank = Bank(a_dir);
   mac_keys_filename = mcf;
 }
 bool CryptoServer::setup_connection() {
@@ -71,8 +74,7 @@ bool CryptoServer::start_server() {
 	while (1) {
 		client = accept(server,(struct sockaddr *)&client_addr, &clientlen);
   	if(client < 0) {
-    		perror("accept");
-    		cerr << "server: dropping client, connected for too long." << endl;
+    		cerr << "server: resetting connection." << endl;
         continue;
   	}
     // process_connection(client);
@@ -331,6 +333,72 @@ void CryptoServer::process_connection(int sock) {
       close(sock);
     }
   }
+}
+void CryptoServer::start_terminal(int child_pid) {
+  string command;
+  do {
+    cout << "server> ";
+    getline(cin, command);
+    regex deposit_regex(TERM_DEPOSIT_REGEX);
+    regex balance_regex(TERM_BALANCE_REGEX);
+    smatch deposit_match;
+    smatch balance_match;
+    regex_search(command, deposit_match, deposit_regex);
+    regex_search(command, balance_match, balance_regex);
+    if(command == "exit") {
+      break;
+    }
+    if(deposit_match.size() != 3 && balance_match.size() != 2) {
+      cerr << "did not recognize command." << endl;
+      continue;
+    }
+    if(deposit_match.size() == 3) {
+      string act = deposit_match[1];
+      string amount_str = deposit_match[2];
+      int amount = atoi(amount_str.c_str());
+      string filename = accounts_dir + "/" + act + ".act";
+      ifstream file_in;
+      ofstream file_out;
+      file_in.open(filename);
+      if(!file_in.is_open()) {
+        cerr << "could not open account." << endl;
+        continue;
+      }
+      string old_balance;
+      string pin;
+      file_in >> pin >> old_balance;
+      file_in.close();
+      int old_balance_int = atoi(old_balance.c_str());
+      old_balance_int += amount;
+      remove(filename.c_str());
+      file_out.open(filename);
+      if(!file_out.is_open()) {
+        cerr << "You broke it." << endl;
+        cerr << "account " << act << " is gone." << endl;
+        cerr << "With great power comes great responsability." << endl;
+        continue;
+      }
+      file_out << pin << " " << old_balance_int << endl;
+      file_out.close();
+    }
+    else if(balance_match.size() == 2) {
+      string act = balance_match[1];
+      string filename = accounts_dir + "/" + act + ".act";
+      ifstream file_in;
+      ofstream file_out;
+      file_in.open(filename);
+      if(!file_in.is_open()) {
+        cerr << "could not open account." << endl;
+        continue;
+      }
+      string old_balance;
+      string pin;
+      file_in >> pin >> old_balance;
+      file_in.close();
+      cout << "Account " << act << ": " << old_balance << endl;
+    }
+  } while(command != "exit");
+  kill(child_pid, SIGKILL);
 }
 void CryptoServer::send_public_key(int sock) {
   send(sock, pub_key.c_str(), pub_key.size(), 0);
