@@ -1,5 +1,6 @@
 #include <iostream>
 #include <unistd.h>
+#include <cstring>
 #include <fstream>
 #include "server.h"
 #include "gen_functions.h"
