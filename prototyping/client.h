@@ -1,3 +1,5 @@
+#ifndef CLIENT_H
+#define CLIENT_H
 #include <netdb.h>
 #include <stdlib.h>
 #include <iostream>
@@ -16,13 +18,13 @@ private:
 	string pub_key;
 	int server;
 	string server_pub_key;
+	string accounts_dir;
 	void get_public_key();
-	// string decr_msg(unsigned char * msg);
+	bool init_connection();
 public:
 	bool debug;
-	bool init_connection();
-	CryptoClient(int p1, string h1, bool d1, string filename_pub, string filename_priv);
-	string send_recv_msg(string msg);
+	void start_session();
+	CryptoClient(int p1, string h1, bool d1, string filename_pub, string filename_priv, string a_dir);
 	void close_connection();
-	// void send_encr_msg(unsigned char * msg, int msg_len);
 };
+#endif /* CLIENT_H */
