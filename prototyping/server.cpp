@@ -35,6 +35,13 @@ bool CryptoServer::setup_connection() {
     	perror("socket");
     	return false;
   	}
+    struct timeval tv; /* timeval and timeout stuff added by davekw7x */ 
+    tv.tv_sec = SOCKET_TIMEOUT; 
+    tv.tv_usec = 0; 
+    if (setsockopt(server, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv, sizeof tv)) { 
+      perror("setsockopt"); 
+      return false; 
+    }
   	int setsockopt_rc = setsockopt(server, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
   	if(setsockopt_rc < 0) {
     	perror("setsockopt");
@@ -64,7 +71,8 @@ bool CryptoServer::start_server() {
 		client = accept(server,(struct sockaddr *)&client_addr, &clientlen);
   	if(client < 0) {
     		perror("accept");
-    		exit(EXIT_FAILURE);
+    		cerr << "server: dropping client, connected for too long." << endl;
+        continue;
   	}
     // process_connection(client);
   	int pid = fork();
@@ -73,11 +81,10 @@ bool CryptoServer::start_server() {
     		exit(EXIT_FAILURE);
   	}
   	if(pid == 0) {
-    		
         if(debug) {
           char str[INET_ADDRSTRLEN];
           inet_ntop(AF_INET, &(client_addr.sin_addr), str, INET_ADDRSTRLEN);
-          cout << "Got a connection from " << str << endl;
+          cout << "server: a connection from " << str << endl;
         }
         close(server);
     		process_connection(client);
@@ -94,10 +101,15 @@ void CryptoServer::process_connection(int sock) {
   	memset(buf, 0, BUF_LEN);
   	int nread = recv(sock, buf, BUF_LEN, 0);
   	if(nread == 0) {
-    		cout << "GOT a read length of 0, closing socket" << endl;
+    		cout << "server: got a read length of 0, closing socket" << endl;
     		close(sock);
     		return;
   	}
+    else if(nread < 0) {
+      cerr << "server: idle too long, client timed out" << endl;
+      close(sock);
+      return;
+    }
     if(strcmp(buf, "PUBKEY") == 0 && !is_approved) {
       // assume its a good key for now,
       //  MAC stuff will go here, we will have a list
@@ -107,57 +119,92 @@ void CryptoServer::process_connection(int sock) {
       send(sock, pub_key.c_str(), pub_key.size(), 0);
       nread = recv(sock, buf_key, BUF_LEN, 0);
       if(nread == 0) {
-        cout << "GOT a read length of 0, closing socket" << endl;
+        cout << "server: got a read length of 0, closing socket" << endl;
+        close(sock);
+        return;
+      }
+      else if(nread < 0) {
+        cerr << "server: idle too long, client timed out" << endl;
         close(sock);
         return;
       }
       clinet_pub_key = (string)buf_key;
-      cout << "Secure Connection Established." << endl;
+      cout << "server: secure connection established." << endl;
       char * ok_enc = new char[ENC_LEN];
       char * fail_enc = new char[ENC_LEN];
       char * success_enc = new char[ENC_LEN];
       ok_enc = encr_msg_str("OK.", 10, clinet_pub_key);
+      if(ok_enc == NULL) {
+        cerr << "server: could not encrypt ok_enc, closing socket." << endl;
+        close(sock);
+        exit(EXIT_FAILURE);
+      }
       fail_enc = encr_msg_str("FAILURE.", 10, clinet_pub_key);
+      if(ok_enc == NULL) {
+        cerr << "server: could not encrypt fail_enc, closing socket." << endl;
+        close(sock);
+        exit(EXIT_FAILURE);
+      }
       success_enc = encr_msg_str("SUCCESS.", 10, clinet_pub_key);
+      if(ok_enc == NULL) {
+        cerr << "server: could not encrypt success_enc, closing socket." << endl;
+        close(sock);
+        exit(EXIT_FAILURE);
+      }
       send(sock, (unsigned char*)ok_enc, ENC_LEN, 0);
       char * login_info_enc = new char[ENC_LEN];
       regex act_regex(ACT_REGEX_STR);
       nread = recv(sock, login_info_enc, ENC_LEN, 0);
       if(nread == 0) {
-        cout << "GOT a read length of 0, closing socket" << endl;
+        cout << "server: got a read length of 0, closing socket." << endl;
+        close(sock);
+        return;
+      }
+      else if(nread < 0) {
+        cerr << "server: idle too long, client timed out." << endl;
         close(sock);
         return;
       }
       string login_info_dec = decr_msg((unsigned char*)login_info_enc, priv_key);
+      if(login_info_dec == "NULL") {
+        cerr << "server: could not decrypt received msg (login_info_dec)." << endl;
+        break;
+      }
       smatch login_regex_result;
       string login_info_str(login_info_dec);
-      cout << login_info_str << endl;
       regex_search(login_info_str, login_regex_result, act_regex);
       string act = login_regex_result[1];
       int pin = atoi(str_to_char_ptr_safe(login_regex_result[2], MAX_PIN_SIZE));
-      cout << "Account #: " << act << endl;
-      cout << "Pin:  " << pin << endl;;
-      cout << "Attempting login....";
+      cout << "server: Attempting login...." << endl;
       bool login_success = bank.lock_act(act, pin);
       bool do_exit = false;
       if(!login_success) {
-        cout << "FAILED." << endl;
+        cout << "server: login failed." << endl;
         send(sock, fail_enc, ENC_LEN, 0);
         break;
       }
       else {
-        cout << "SUCCESS." << endl;
+        cout << "server: user " << act << " logged in successfully." << endl;
         send(sock, success_enc, ENC_LEN, 0);
         while(!do_exit) {
           char * transaction_enc = new char[ENC_LEN];
           memset( transaction_enc, '0', sizeof(char)*ENC_LEN );
           nread = recv(sock, transaction_enc, ENC_LEN, 0);
           if(nread == 0) {
-            cout << "GOT a read length of 0, closing socket" << endl;
+            cout << "server: got a read length of 0, closing socket." << endl;
             break;
+          }
+          else if(nread < 0) {
+            cerr << "server: idle too long, client timed out." << endl;
+            close(sock);
+            exit(EXIT_FAILURE);
           }
           // TODO: Fix sometimes getting garbage values on decrypt
           string tmp = decr_msg((unsigned char*)transaction_enc, priv_key);
+          if(tmp == "NULL") {
+            cerr << "server: could not decrypt received msg (tmp)." << endl;
+            continue;
+          }
           regex trans_regex_non_balance_transfer(TRANS_REGEX_STR_NON_BALANCE_TRANSFER);
           regex trans_regex_balance(TRANS_REGEX_STR_BALANCE);
           regex trans_regex_transfer(TRANS_REGEX_STR_TRANSFER);
@@ -168,7 +215,7 @@ void CryptoServer::process_connection(int sock) {
           regex_search(tmp, trans_regex_balance_result, trans_regex_balance);
           regex_search(tmp, trans_regex_transfer_result, trans_regex_transfer);
           if(tmp == "EXIT.") {
-            cout << "User logged out." << endl;
+            cout << "server: user " << act << " logged out." << endl;
             break;
           }
           else if(trans_regex_non_balance_transfer_result.size() != 3 && trans_regex_balance_result.size() != 1 && trans_regex_transfer_result.size() != 3) {
@@ -178,66 +225,80 @@ void CryptoServer::process_connection(int sock) {
           if(trans_regex_non_balance_transfer_result.size() == 3) {
             if(trans_regex_non_balance_transfer_result[1] == "W") {
               int amount = atoi(str_to_char_ptr_safe(trans_regex_non_balance_transfer_result[2], MAX_AMT_LEN));
-              cout << "account before: " << bank.balance_inq(act, pin) << endl;
               bool withdraw_success = bank.withdraw(act, pin, amount);
               if(withdraw_success) {
-                cout << "Withdraw Successful." << endl;
+                cerr << "server " << act << ": withdrawl of " << amount << " from " << act << " successful." << endl;
                 char * new_balance_enc = new char[ENC_LEN];
                 new_balance_enc = encr_msg_int(bank.balance_inq(act, pin), MAX_AMT_LEN, clinet_pub_key);
+                if(new_balance_enc == NULL) {
+                  cerr << "could not enc new_balance_enc. closing socket." << endl;
+                  close(sock);
+                  exit(EXIT_FAILURE);
+                }
                 send(sock, new_balance_enc, ENC_LEN, 0);
               }
               else {
-                cout << "Withdraw Failed." << endl;
+                cerr << "server " << act << ": withdrawl of " << amount << " from " << act << " unsuccessful." << endl;
                 send(sock, fail_enc, ENC_LEN, 0); 
               }
-              cout << "account after: " << bank.balance_inq(act, pin) << endl;
             }
             else if(trans_regex_non_balance_transfer_result[1] == "D") {
               int amount = atoi(str_to_char_ptr_safe(trans_regex_non_balance_transfer_result[2], MAX_AMT_LEN));
-              cout << "account before: " << bank.balance_inq(act, pin) << endl;
               bool withdraw_success = bank.deposit(act, pin, amount);
               if(withdraw_success) {
-                cout << "Deposit Successful." << endl;
+                cerr << "server " << act << ": deposit of " << amount << " to " << act << " successful." << endl;
                 char * new_balance_enc = new char[ENC_LEN];
                 new_balance_enc = encr_msg_int(bank.balance_inq(act, pin), MAX_AMT_LEN, clinet_pub_key);
+                if(new_balance_enc == NULL) {
+                  cerr << "server: could not enc new_balance_enc. closing socket." << endl;
+                  close(sock);
+                  exit(EXIT_FAILURE);
+                }
                 send(sock, new_balance_enc, ENC_LEN, 0);
               }
               else {
-                cout << "Deposit unsuccessful." << endl;;
+                cerr << "server " << act << ": deposit of " << amount << " to " << act << " unsuccessful." << endl;
                 send(sock, fail_enc, ENC_LEN, 0); 
               }
-              cout << "account after: " << bank.balance_inq(act, pin) << endl;
             }
           }
           else if(trans_regex_balance_result.size() == 1) {
             int amount = bank.balance_inq(act, pin);
             if(amount != -1) {
-              cout << "Balance Inquery successful." << endl;
+              cout << "server " << act << ": balance inquery successful." << endl;
               char * new_balance_enc = new char[ENC_LEN];
               new_balance_enc = encr_msg_int(amount, MAX_AMT_LEN, clinet_pub_key);
+              if(new_balance_enc == NULL) {
+                cerr << "server: could not enc new_balance_enc. closing socket." << endl;
+                close(sock);
+                exit(EXIT_FAILURE);
+              }
               send(sock, new_balance_enc, ENC_LEN, 0);
             }
             else {
-              cout << "Balance Inquery unsuccessful.";
+              cout << "server " << act << ": balance Inquery unsuccessful.";
               send(sock, fail_enc, ENC_LEN, 0); 
             }
           }
           else if(trans_regex_transfer_result.size() == 3) {
             int amount = atoi(str_to_char_ptr_safe(trans_regex_transfer_result[1], MAX_AMT_LEN));
             string t_account = trans_regex_transfer_result[2];
-            cout << "account before: " << bank.balance_inq(act, pin) << endl;
             bool transfer_success = bank.transfer(act, pin, t_account, amount);
             if(transfer_success) {
-              cout << "Transfer Successful." << endl;
+              cout << "server " << act << ": transfer of " << amount << " to act " << t_account << " successful." << endl;
               char * new_balance_enc = new char[ENC_LEN];
               new_balance_enc = encr_msg_int(bank.balance_inq(act, pin), MAX_AMT_LEN, clinet_pub_key);
+              if(new_balance_enc == NULL) {
+                cerr << "server: could not enc new_balance_enc. closing socket." << endl;
+                close(sock);
+                exit(EXIT_FAILURE);
+              }
               send(sock, new_balance_enc, ENC_LEN, 0);
             }
             else {
-              cout << "Transfer unsuccessful." << endl;;
+              cerr << "server " << act << ": transfer of " << amount << " to act " << t_account << " unsuccessful." << endl;
               send(sock, fail_enc, ENC_LEN, 0); 
             }
-            cout << "account after: " << bank.balance_inq(act, pin) << endl;
           }
         }
         bank.unlock_act(act, pin);

@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS=-g -Wall -std=c++11
+CFLAGS=-g -Wall -std=c++14
 CRYPTO_CFLAGS=-lssl -lcrypto 
 OBJ=server.o client.o crypto.o bank.o gen_functions.o account.o constants.o
 all: server proxy client

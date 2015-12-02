@@ -68,7 +68,7 @@ vector <string> get_account_names(string account_dir) {
                 accounts.push_back(file_name_match[1]);    
             }
         }
-        closedir (dir);
+        closedir(dir);
     }
     return accounts;
 }

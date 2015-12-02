@@ -8,6 +8,7 @@ const int MAX_AMT_LEN = 16;
 const int RAND_PAD_LEN = 4;
 const int MAX_PORT_LEN = 5;
 const int MAX_FILENAME_LEN = 255; // max len for ext4
+const int SOCKET_TIMEOUT = 1000; // TODO: change this
 const std::string ACT_FNAME_REGEX = "^(\\w+)\\.act$";
 const std::string OK_REGEX_STR = "^OK.$";
 const std::string FAIL_REGEX_STR = "^FAILURE.";

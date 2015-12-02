@@ -82,23 +82,51 @@ void CryptoClient::start_session() {
 		char * buf = new char[BUF_LEN];
 		string msg = "PUBKEY";
 		send(server, msg.c_str(), msg.length(), 0);
-		recv(server, buf, BUF_LEN, 0);
+		int nread = recv(server, buf, BUF_LEN, 0);
+		if(nread <= 0) {
+			cerr << "socket closed by server." << endl;
+			close(server);
+			continue;
+		}
 		server_pub_key = (string)buf;
 		cout << "Secure Connection Established." << endl;
 		send(server, pub_key.c_str(), pub_key.size(), 0);
-		recv(server, buf, ENC_LEN, 0);
-		string received = decr_msg((unsigned char*) buf, priv_key);
-		if(received == "OK.") {			
+		nread = recv(server, buf, ENC_LEN, 0);
+		if(nread <= 0) {
+			cerr << "socket closed by server." << endl;
+			close(server);
+			continue;
+		}
+		string received_init = decr_msg((unsigned char*) buf, priv_key);
+		if(received_init == "NULL") {
+			cerr << "could not decrypt received msg (reveived)" << endl;
+			continue;
+		}
+		if(received_init == "OK.") {			
 			string login_info;
 			login_info = act_str + ":" + pin_str;
 			char * login_info_enc = new char[ENC_LEN];
 			login_info_enc = encr_msg_str(login_info, login_info.size(), server_pub_key);
+			if(login_info_enc == NULL) {
+				cerr << "could not encrypt login info. disconnecting." << endl;
+				break;
+			}
 			send(server, login_info_enc, ENC_LEN, 0);
-			recv(server, buf, ENC_LEN, 0);
+			nread = recv(server, buf, ENC_LEN, 0);
+			if(nread <= 0) {
+				cerr << "socket closed by server." << endl;
+				close(server);
+				continue;
+			}
 			string received = decr_msg((unsigned char*) buf, priv_key);
+			if(received == "NULL") {
+				cerr << "could not decrypt received msg (reveived)" << endl;
+				continue;
+			}
 			// char * command_enc;
 			if(received != "FAILURE."){
 				string command_act = "";
+				bool force_closed = false;
 				do {
 					// command_enc = new char[ENC_LEN];
 					cout << "action> ";
@@ -147,14 +175,27 @@ void CryptoClient::start_session() {
 						char * server_resp = new char[ENC_LEN];
 						string payload = "W:" + amount_str;
 						if(amount_str.size() > (unsigned int)MAX_AMT_LEN) {
-							cerr << "NOPE!" << endl;
 							continue;
 						}
 						char * command_enc = new char[ENC_LEN];
 						command_enc = encr_msg((unsigned char *)payload.c_str(), payload.size(), server_pub_key);
+						if(command_enc == NULL) {
+							cerr << "could not encrypt command. disconnecting." << endl;
+							break;
+						}
 						send(server, command_enc, ENC_LEN, 0);
-						recv(server, server_resp, ENC_LEN, 0);
+						nread = recv(server, server_resp, ENC_LEN, 0);
+						if(nread <= 0) {
+							cerr << "socket closed by server." << endl;
+							force_closed = true;
+							close(server);
+							break;
+						}
 						string response = decr_msg((unsigned char*)server_resp, priv_key);
+						if(response == "NULL") {
+							cerr << "could not decrypt received msg (response)" << endl;
+							continue;
+						}
 						if(response != "FAILURE.") {
 							cout << "Withdrawl of " << amount_str << " successful." << endl;	
 							cout << "New Balance of " << response << "." << endl;
@@ -167,52 +208,90 @@ void CryptoClient::start_session() {
 						char * server_resp = new char[ENC_LEN];
 						string payload = "D:" + amount_str;
 						if(amount_str.size() > (unsigned int)MAX_AMT_LEN) {
-							cerr << "NOPE!" << endl;
 							continue;
 						}
 						char * command_enc = new char[ENC_LEN];					
 						command_enc = encr_msg((unsigned char *)payload.c_str(), payload.size(), server_pub_key);
+						if(command_enc == NULL) {
+							cerr << "could not encrypt command. disconnecting." << endl;
+							break;
+						}
 						send(server, command_enc, ENC_LEN, 0);
-						recv(server, server_resp, ENC_LEN, 0);
+						int nread = recv(server, server_resp, ENC_LEN, 0);
+						if(nread <= 0) {
+							cerr << "socket closed by server." << endl;
+							force_closed = true;
+							close(server);
+							break;
+						}
 						string response = decr_msg((unsigned char*)server_resp, priv_key);
+						if(response == "NULL") {
+							cerr << "could not decrypt received msg (response)" << endl;
+							continue;
+						}
 						if(response != "FAILURE.") {
 							cout << "Deposit of " << amount_str << " successful." << endl;	
 							cout << "New Balance of " << response << "." << endl;
 						}
 						else {
-							cout << "Deposit of " << amount_str << " unsuccessful, insufficient funds." << endl;
+							cout << "Deposit of " << amount_str << " unsuccessful." << endl;
 						}
 					}
 					else if(action == 3) {
 						char * server_resp = new char[ENC_LEN];
 						string payload = "T:" + amount_str + ":" + t_account;
 						if(amount_str.size() > (unsigned int)MAX_AMT_LEN || t_account.size() > (unsigned int)MAX_ACT_SIZE) {
-							cerr << "NOPE!" << endl;
 							continue;
 						}
 						char * command_enc = new char[ENC_LEN];					
 						command_enc = encr_msg((unsigned char *)payload.c_str(), payload.size(), server_pub_key);
+						if(command_enc == NULL) {
+							cerr << "could not encrypt command. disconnecting." << endl;
+							break;
+						}
 						send(server, command_enc, ENC_LEN, 0);
-						recv(server, server_resp, ENC_LEN, 0);
+						int nread = recv(server, server_resp, ENC_LEN, 0);
+						if(nread <= 0) {
+							cerr << "socket closed by server." << endl;
+							force_closed = true;
+							close(server);
+							break;
+						}
 						string response = decr_msg((unsigned char*)server_resp, priv_key);
+						if(response == "NULL") {
+							cerr << "could not decrypt received msg (response)" << endl;
+							continue;
+						}
 						if(response != "FAILURE.") {
 							cout << "Transfer of " << amount_str << " successful." << endl;	
 							cout << "New Balance of " << response << "." << endl;
 						}
 						else {
-							cout << "Transfer of " << amount_str << " unsuccessful, insufficient funds." << endl;
+							cout << "Transfer of " << amount_str << " unsuccessful." << endl;
 						}
 					}
 					else if(action == 4) {
 						char * server_resp = new char[ENC_LEN];
-						int length = 2 + RAND_PAD_LEN;
 						string payload = "B:";
 						char * command_enc = new char[ENC_LEN];
+						if(command_enc == NULL) {
+							cerr << "could not encrypt command. disconnecting." << endl;
+							break;
+						}
 						command_enc = encr_msg((unsigned char *)payload.c_str(), payload.size(), server_pub_key);
-						cout << payload << " " << payload.size() << " " << length << endl;
 						send(server, command_enc, ENC_LEN, 0);
-						recv(server, server_resp, ENC_LEN, 0);
+						int nread = recv(server, server_resp, ENC_LEN, 0);
+						if(nread <= 0) {
+							cerr << "socket closed by server." << endl;
+							force_closed = true;
+							close(server);
+							break;
+						}
 						string response = decr_msg((unsigned char*)server_resp, priv_key);
+						if(response == "NULL") {
+							cerr << "could not decrypt received msg (response)" << endl;
+							continue;
+						}
 						if(response != "FAILURE.") {	
 							cout << "Current Balance is " << response << "." << endl;
 						}
@@ -228,11 +307,22 @@ void CryptoClient::start_session() {
 					}					
 				}
 				while(command_act != "exit");
-				cout << "logging you out." << endl;
-				char * exit_command_enc = new char[ENC_LEN];
-				exit_command_enc = encr_msg_str("EXIT.", ENC_LEN, server_pub_key);
-				send(server, exit_command_enc, ENC_LEN, 0);
-				close(server);
+				if(!force_closed) {
+					cout << "logging you out." << endl;
+					char * exit_command_enc = new char[ENC_LEN];
+					exit_command_enc = encr_msg_str("EXIT.", ENC_LEN, server_pub_key);
+					if(exit_command_enc == NULL) {
+						cerr << "could not encrypt exit command. disconnecting." << endl;
+						break;
+					}
+					else {
+						send(server, exit_command_enc, ENC_LEN, 0);	
+					}
+					close(server);
+				}
+			}
+			else {
+				cerr << "Login Failed." << endl;
 			}
 		}
 	} while(command != "exit");

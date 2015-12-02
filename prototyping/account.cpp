@@ -16,7 +16,7 @@ account::account(string an, string accounts_dir) {
 }
 bool account::load_account() {
 	if(is_locked()) {
-		cerr << "Cannot Load account, locked" << endl;
+		cerr << "account " << account_name << "-> cannot Load account, locked." << endl;
 		return false;
 	}
 	if(!check_file()) {
@@ -25,7 +25,7 @@ bool account::load_account() {
 	ifstream file;
 	file.open(account_filename);
 	if(!file.is_open()) {
-		cerr << "Could not open file " << account_filename << "." << endl;
+		cerr << "account " << account_name << "-> could not open file " << account_filename << "." << endl;
 		return false;
 	}
 	string pin_str, balance_str;
@@ -40,14 +40,14 @@ bool account::load_account() {
 }
 bool account::check_file() {
 	if(!file_exists(account_filename)) {
-		cerr << "File " << account_filename << " does not exist." << endl;
+		cerr << "account " << account_name << "-> file " << account_filename << " does not exist." << endl;
 		return false;
 	}
 	return true;
 }
 bool account::save_account() {
 	if(!is_locked()) {
-		cerr << "Cannot save account, not locked" << endl;
+		cerr << "account " << account_name << "-> cannot save account, not locked." << endl;
 		return false;
 	}
 	remove(lock_filename.c_str());
@@ -55,7 +55,7 @@ bool account::save_account() {
 	ofstream file;
 	file.open(account_filename);
 	if(!file.is_open()) {
-		cerr << "this is bad..." << endl;
+		cerr << "account " << account_name << "-> this is bad..." << endl;
 		exit(EXIT_FAILURE);
 	}
 	file << account_str() << endl;
@@ -69,7 +69,7 @@ void account::reset_vars() {
 }
 bool account::check_creds(string an, int p) {
 	if(!is_locked()) {
-		cerr << "check_creds unsuccessful account not locked." << endl;
+		cerr << "account " << account_name << "-> check_creds: unsuccessful account not locked." << endl;
 		return false;
 	}
 	if(account_name != an) {
@@ -80,26 +80,13 @@ bool account::check_creds(string an, int p) {
 	}
 	return true;
 }
-bool account::transfer(string an, int p, int amount) {
-	if(is_locked()) {
-		return false;
-	}
-	load_account();
-	if(!check_creds(an, p)) {
-		cerr << "transfer: bad credentials." << endl;
-		return false;
-	}
-	deposit(amount);
-	save_account();
-	return true;
-}
 bool account::withdraw(string an, int p, int amount) {
 	if(!is_locked()) {
-		cerr << "withdraw: unsuccessful account not locked." << endl;
+		cerr << "account " << account_name << "-> withdraw: unsuccessful account not locked." << endl;
 		return false;
 	}
 	if(!check_creds(an, p)) {
-		cerr << "withdraw: bad credentials." << endl;
+		cerr << "account " << account_name << "-> withdraw: bad credentials." << endl;
 		return false;
 	}
 	if(amount > balance) {
@@ -112,7 +99,7 @@ bool account::withdraw(string an, int p, int amount) {
 }
 bool account::deposit(int amount) {
 	if(!is_locked()) {
-		cerr << "deposit: unsuccessful account not locked." << endl;
+		cerr << "account " << account_name << "-> deposit: unsuccessful account not locked." << endl;
 		return false;
 	}
 	balance += amount;
@@ -120,11 +107,11 @@ bool account::deposit(int amount) {
 }
 int account::get_balance(string an, int p) {
 	if(!is_locked()) {
-		cerr << "get_balance: unsuccessful account not locked." << endl;
+		cerr << "account " << account_name << "-> get_balance: unsuccessful account not locked." << endl;
 		return -1;
 	}
 	if(!check_creds(an, p)) {
-		cerr << "get_balance: bad credentials." << endl;
+		cerr << "account " << account_name << "-> get_balance: bad credentials." << endl;
 		return false;
 	}
 	return balance;

@@ -22,7 +22,7 @@ RSA * create_rsa_pub(char * key) {
   BIO * keybio;
   keybio = BIO_new_mem_buf(key, -1);
   if (keybio == NULL) {
-    cerr << "Failed to create key BIO" << endl;
+    cerr << "crypto: failed to create key BIO" << endl;
     // error check
     return NULL;
   }
@@ -34,7 +34,7 @@ RSA * create_rsa_priv(char * key) {
   BIO * keybio;
   keybio = BIO_new_mem_buf(key, -1);
   if (keybio == NULL) {
-    cerr << "Failed to create key BIO" << endl;
+    cerr << "crypto: failed to create key BIO" << endl;
     // error check
     return NULL;
   }
@@ -59,9 +59,9 @@ string decr_msg(unsigned char * msg, string priv_key) {
   memset(decr, '\0', BUF_LEN * sizeof(char));
   int result = private_decrypt(rsa, msg, ENC_LEN, (unsigned char*)key, (unsigned char*)decr);
   if(result == -1) {
-    cerr << "Private Decrypt failed " << endl;
+    cerr << "crypto: private Decrypt failed " << endl;
     // error check
-    return "NULL1";
+    return "NULL";
   }
   string decr_str = string(decr);
   return decr_str;
@@ -74,7 +74,7 @@ char * encr_msg(unsigned char * msg, int msg_len, string pub_key) {
   memset(enc, '\0', ENC_LEN * sizeof(char));
 	int result = public_encrypt(rsa, msg, msg_len, (unsigned char*)key, (unsigned char *)enc);
 	if(result == -1) {
-		cerr << "Public Encrypt failed " << endl;
+		cerr << "crypto: public Encrypt failed " << endl;
     // error check
 		return NULL;
 	}
