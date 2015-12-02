@@ -26,9 +26,10 @@ int main(int argc, char ** argv) {
 	string priv_key = "keys/private_server.pem";
 	string pub_key = "keys/public_server.pem";
 	string accounts_dir = "./accounts_bank";
-	string mac_keys = "./mac_keys.trusted";
+	string mac_keys = "./mac_keys_server.trusted";
+	string mac_key = "./server.mac_key";
 	int c;
-	while ((c = getopt(argc, argv, "dht:k:K:a:")) != -1) {
+	while ((c = getopt(argc, argv, "dht:k:K:a:m:M:")) != -1) {
 		switch (c) {
 			case 'h':
 				print_usage(argv[0]);
@@ -50,11 +51,14 @@ int main(int argc, char ** argv) {
 				accounts_dir = optarg;
 				break;
 			case 'm':
-				accounts_dir = optarg;
+				mac_keys = optarg;
+				break;
+			case 'M':
+				mac_key = optarg;
 				break;
 		}
 	}
-	CryptoServer server = CryptoServer(port, host, debug, pub_key, priv_key, accounts_dir, mac_keys);
+	CryptoServer server = CryptoServer(port, host, debug, pub_key, priv_key, accounts_dir, mac_key, mac_keys);
 	int pid = fork();
 	if(pid < 0) {
     		perror("fork");
@@ -74,7 +78,7 @@ int main(int argc, char ** argv) {
 	
 }
 void print_usage(char * argv0) {
-  cout << "usage: " << argv0 << " <port> [-d] [-h] [-H hostname] [-k private key] [-K public key] [-a accounts_dir] [-m mac_keys]" << endl;
+  cout << "usage: " << argv0 << " <port> [-d] [-h] [-H hostname] [-k private key] [-K public key] [-a accounts_dir] [-m mac_keys] [-M mac_key]" << endl;
   cout << "\t <port> the port to listen on (REQUIRED)" << endl;
   cout << "\t-h help (show this menu)" << endl;
   cout << "\t-d Debug flag" << endl;
@@ -82,5 +86,6 @@ void print_usage(char * argv0) {
   cout << "\t-k private key file (DEFAULT: keys/private_server.pem)" << endl;
   cout << "\t-K public key file (DEFAULT: keys/public_server.pem)" << endl;
   cout << "\t-a accounts directory (DEFAULT: ./accounts)" << endl;
-  cout << "\t-m mac_keys the mac key file (DEFAULT: mac_keys.trusted)" << endl;
+  cout << "\t-m mac_keys the  trusted mac keys file (DEFAULT: mac_keys_server.trusted)" << endl;
+  cout << "\t-M mac_key the my mac key file (DEFAULT: server.mac_key)" << endl;
 }

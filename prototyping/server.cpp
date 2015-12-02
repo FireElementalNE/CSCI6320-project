@@ -13,7 +13,7 @@
 #include "bank.h"
 #include "constants.h"
 using namespace std;
-CryptoServer::CryptoServer(int p1, string h1, bool d1, string filename_pub, string filename_priv, string a_dir, string mcf) {
+CryptoServer::CryptoServer(int p1, string h1, bool d1, string filename_pub, string filename_priv, string a_dir, string mf, string mcf) {
 	port = p1;
 	host = h1;
 	debug = d1;
@@ -25,6 +25,7 @@ CryptoServer::CryptoServer(int p1, string h1, bool d1, string filename_pub, stri
   accounts_dir = a_dir;
   bank = Bank(a_dir);
   mac_keys_filename = mcf;
+  mac_filename = mf;
 }
 bool CryptoServer::setup_connection() {
 	if(debug) {
@@ -134,6 +135,9 @@ void CryptoServer::process_connection(int sock) {
       clinet_pub_key = (string)buf_key;
       cout << "server: secure connection established." << endl;
       memset(buf, 0, BUF_LEN);
+      char * mac_req = new char[ENC_LEN];
+      mac_req = encr_msg_str("MAC.", 10, clinet_pub_key);
+      send(sock, (unsigned char*)mac_req, ENC_LEN, 0);
       nread = recv(sock, buf, BUF_LEN, 0);
       if(nread == 0) {
         cout << "server: got a read length of 0, closing socket" << endl;
@@ -145,7 +149,7 @@ void CryptoServer::process_connection(int sock) {
         close(sock);
         return;
       }
-      string mac_str = string(buf);
+      string mac_str = decr_msg((unsigned char*)buf, priv_key);
       bool mac_check = check_mac(mac_keys_filename, mac_str);
       if(!mac_check) {
         cerr << "server: mac check failed." << endl;
@@ -153,6 +157,31 @@ void CryptoServer::process_connection(int sock) {
         return;
       }
       cout << "server: mac check passed." << endl;
+      string my_mac = make_mac(mac_filename);
+      char * mac_enc = new char[ENC_LEN];
+      mac_enc = encr_msg_str(my_mac, my_mac.size(), clinet_pub_key);
+      send(sock, mac_enc, ENC_LEN, 0);
+      nread = recv(sock, buf, ENC_LEN, 0);
+      if(nread == 0) {
+        cout << "server: got a read length of 0, closing socket" << endl;
+        close(sock);
+        return;
+      }
+      else if(nread < 0) {
+        cerr << "server: idle too long, client timed out" << endl;
+        close(sock);
+        return;
+      }
+      string received_init = decr_msg((unsigned char*) buf, priv_key);
+      if(received_init == "NULL") {
+        cerr << "could not decrypt received msg (reveived)" << endl;
+        continue;
+      }
+      if(received_init != "OK.") {
+        cerr << "something went wrong." << endl;
+        close(server);
+        continue;
+      }
       char * ok_enc = new char[ENC_LEN];
       char * fail_enc = new char[ENC_LEN];
       char * success_enc = new char[ENC_LEN];

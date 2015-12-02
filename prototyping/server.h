@@ -29,9 +29,10 @@ private:
 	string accounts_dir;
 public:
 	string mac_keys_filename;
+	string mac_filename;
 	void send_response(string response);
 	CryptoServer() {}
-	CryptoServer(int p1, string h1, bool d1, string filename_pub, string filename_priv, string a_dir, string mcf);
+	CryptoServer(int p1, string h1, bool d1, string filename_pub, string filename_priv, string a_dir, string mcf, string mf);
 	bool start_server();
 	void start_terminal(int child_pid);
 };

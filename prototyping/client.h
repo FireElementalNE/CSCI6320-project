@@ -22,9 +22,10 @@ private:
 	bool init_connection();
 public:
 	string mac_filename;
+	string mac_keys_filename;
 	bool debug;
 	void start_session();
-	CryptoClient(int p1, string h1, bool d1, string filename_pub, string filename_priv, string a_dir, string mf);
+	CryptoClient(int p1, string h1, bool d1, string filename_pub, string filename_priv, string a_dir, string mf, string mkf);
 	void close_connection();
 };
 #endif /* CLIENT_H */

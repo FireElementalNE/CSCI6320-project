@@ -12,11 +12,12 @@
 #include "crypto.h"
 #include "constants.h"
 using namespace std;
-CryptoClient::CryptoClient(int p1, string h1, bool d1, string filename_pub, string filename_priv, string a_dir, string mf) {
+CryptoClient::CryptoClient(int p1, string h1, bool d1, string filename_pub, string filename_priv, string a_dir, string mf, string mkf) {
 	port = p1;
 	host = h1;
 	debug = d1;
 	mac_filename = mf;
+	mac_keys_filename = mkf;
 	pub_key = read_keyfile(filename_pub);
   	priv_key = read_keyfile(filename_priv);
   	accounts_dir = a_dir;
@@ -91,8 +92,7 @@ void CryptoClient::start_session() {
 		server_pub_key = (string)buf;
 		cout << "Secure Connection Established." << endl;
 		send(server, pub_key.c_str(), pub_key.size(), 0);
-		string my_mac = make_mac(mac_filename);
-		send(server, my_mac.c_str(), my_mac.size(), 0);
+		memset(buf, 0 , ENC_LEN * sizeof(char));
 		nread = recv(server, buf, ENC_LEN, 0);
 		if(nread <= 0) {
 			cerr << "socket closed by server." << endl;
@@ -100,6 +100,49 @@ void CryptoClient::start_session() {
 			continue;
 		}
 		string received_init = decr_msg((unsigned char*) buf, priv_key);
+		if(received_init == "NULL") {
+			cerr << "could not decrypt received msg (reveived)" << endl;
+			continue;
+		}
+		received_init = decr_msg((unsigned char*) buf, priv_key);
+		if(received_init != "MAC.") {
+			cerr << "something went wrong, closing." << endl;
+			close(server);
+			continue;
+		}
+		string my_mac = make_mac(mac_filename);
+		char * mac_enc = new char[ENC_LEN];
+		mac_enc = encr_msg_str(my_mac, my_mac.size(), server_pub_key);
+		send(server, mac_enc, ENC_LEN, 0);
+		nread = recv(server, buf, ENC_LEN, 0);
+		if(nread <= 0) {
+			cerr << "socket closed by server. " << endl;
+			close(server);
+			continue;
+		}
+		if(received_init == "NULL") {
+			cerr << "could not decrypt received msg (reveived)" << endl;
+			continue;
+		}
+		string mac_str = decr_msg((unsigned char*)buf, priv_key);
+		bool mac_check = check_mac(mac_keys_filename, mac_str);
+		if(!mac_check) {
+			cerr << "mac check failed." << endl;
+			close(server);
+			return;
+		}
+		cout << "mac check passed" << endl;
+		memset(buf, 0, BUF_LEN);
+		char * ok_enc = new char[ENC_LEN];
+		ok_enc = encr_msg_str("OK.", 10, server_pub_key);
+		send(server, (unsigned char*)ok_enc, ENC_LEN, 0);
+		nread = recv(server, buf, ENC_LEN, 0);
+		if(nread <= 0) {
+			cerr << "socket closed by server." << endl;
+			close(server);
+			continue;
+		}
+		received_init = decr_msg((unsigned char*) buf, priv_key);
 		if(received_init == "NULL") {
 			cerr << "could not decrypt received msg (reveived)" << endl;
 			continue;

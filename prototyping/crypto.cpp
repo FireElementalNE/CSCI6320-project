@@ -120,7 +120,7 @@ string get_mac(string msg, string key) {
   unsigned char * mac_ptr = new unsigned char[EVP_MAX_MD_SIZE];
   memset(mdS, '\0', EVP_MAX_MD_SIZE * sizeof(char));
   memset(mac_ptr, '\0', EVP_MAX_MD_SIZE * sizeof(char));
-  mac_ptr = HMAC(EVP_sha512(), (unsigned char*)key.c_str(), key.size(), (unsigned char*)msg.c_str(), msg.size(), (unsigned char*)mdS, &md_len);
+  mac_ptr = HMAC(EVP_sha256(), (unsigned char*)key.c_str(), key.size(), (unsigned char*)msg.c_str(), msg.size(), (unsigned char*)mdS, &md_len);
   string mac_str = raw_to_hex((unsigned char*)mdS, md_len);
   return mac_str;
 }

@@ -26,8 +26,9 @@ int main(int argc, char ** argv) {
 	string pub_key = "keys/public_client.pem";
 	string accounts_dir = "./accounts_atm/";
 	string mac_key = "./client.mac_key";
+	string mac_keys = "./mac_keys_client.trusted";
 	int c;
-	while ((c = getopt(argc, argv, "dhT:a:")) != -1) {
+	while ((c = getopt(argc, argv, "dhT:a:M:m:")) != -1) {
 		switch (c) {
 		case 'h':
 			print_usage(argv[0]);
@@ -47,21 +48,25 @@ int main(int argc, char ** argv) {
 		case 'a':
 			accounts_dir = optarg;
 			break;
-		case 'm':
+		case 'M':
 			mac_key = optarg;
+			break;
+		case 'm':
+			mac_keys = optarg;
 			break;
 		}
 	}
-	CryptoClient client = CryptoClient(port, host, debug, pub_key, priv_key, accounts_dir, mac_key);
+	CryptoClient client = CryptoClient(port, host, debug, pub_key, priv_key, accounts_dir, mac_key, mac_keys);
 	client.start_session();
 	client.close_connection();
 }
 void print_usage(char * argv0) {
-	cout << "usage: " << argv0 << " <port> [-d] [-h] [-T hostname] [-k private key] [-K public key] [-a accounts] [-m mac_key]" << endl;
+	cout << "usage: " << argv0 << " <port> [-d] [-h] [-T hostname] [-k private key] [-K public key] [-a accounts] [-m mak_keys] [-M mac_keys]" << endl;
 	cout << "\t port port to connect to (REQUIRED)" << endl;
 	cout << "\t-h help (show this menu)" << endl;
 	cout << "\t-d Debug flag" << endl;
 	cout << "\t-T hostname to connect to (DEFAULT: 'localhost')" << endl;
 	cout << "\t-a account directory for atm (DEFAULT: ./accounts_atm/" << endl;
-	cout << "\t-m mac_key the mac key file (DEFAULT: client.mac_key)" << endl;
+	cout << "\t-M mac_key the mac key file (DEFAULT: client.mac_key)" << endl;
+	cout << "\t-m mac_keys mac_keys the  trusted mac keys file (DEFAULT: mac_keys_client.trusted)" << endl;
 }
