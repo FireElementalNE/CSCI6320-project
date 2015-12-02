@@ -12,6 +12,8 @@
 #include <openssl/err.h>
 #include <openssl/sha.h>
 #include <openssl/rand.h>
+#include <openssl/hmac.h>
+#include <openssl/evp.h> 
 #include <stdlib.h>
 #include <time.h>
 #include "constants.h"
@@ -53,6 +55,7 @@ int public_encrypt(RSA * rsa, unsigned char * data, int data_len, unsigned char 
 }
 string decr_msg(unsigned char * msg, string priv_key) {
   char * key = new char[BUF_LEN];
+  memset(key, '\0', BUF_LEN * sizeof(char));
   strncpy(key, priv_key.c_str(), priv_key.size());
   RSA * rsa = create_rsa_priv(key);
   char * decr = new char[BUF_LEN];
@@ -68,6 +71,7 @@ string decr_msg(unsigned char * msg, string priv_key) {
 }
 char * encr_msg(unsigned char * msg, int msg_len, string pub_key) {
 	char * key = new char[BUF_LEN];
+  memset(key, '\0', BUF_LEN * sizeof(char));
 	strncpy(key, pub_key.c_str(), pub_key.size());
 	RSA * rsa = create_rsa_pub(key);
 	char * enc = new char[ENC_LEN];
@@ -109,3 +113,26 @@ char * encr_msg_int(int msg_int, int max_size, string pub_key) {
   strncpy(msg, msg_str.c_str(), msg_str.size());
   return encr_msg((unsigned char*)msg, msg_len, pub_key);
 }
+
+string get_mac(string msg, string key) {
+  unsigned int md_len = 0; // length of MAC/digest
+  char * mdS = new char[EVP_MAX_MD_SIZE];
+  unsigned char * mac_ptr = new unsigned char[EVP_MAX_MD_SIZE];
+  memset(mdS, '\0', EVP_MAX_MD_SIZE * sizeof(char));
+  memset(mac_ptr, '\0', EVP_MAX_MD_SIZE * sizeof(char));
+  mac_ptr = HMAC(EVP_sha512(), (unsigned char*)key.c_str(), key.size(), (unsigned char*)msg.c_str(), msg.size(), (unsigned char*)mdS, &md_len);
+  string mac_str = raw_to_hex((unsigned char*)mdS, md_len);
+  return mac_str;
+}
+string make_random_msg() {
+  char * rand_msg = new char[MAC_MSG_LEN];
+  memset(rand_msg, '\0', MAC_MSG_LEN * sizeof(char));
+  int rc = RAND_bytes((unsigned char *)rand_msg, MAC_MSG_LEN);
+  if(rc == 0) {
+    cerr << "crypto: failed to make random msg." << endl;
+    exit(EXIT_FAILURE);
+  }
+  string rnd_msg_str = raw_to_hex((unsigned char*)rand_msg, MAC_MSG_LEN);
+  return rnd_msg_str;
+}
+

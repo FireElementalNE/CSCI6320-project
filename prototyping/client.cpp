@@ -11,12 +11,12 @@
 #include "gen_functions.h"
 #include "crypto.h"
 #include "constants.h"
- 
 using namespace std;
-CryptoClient::CryptoClient(int p1, string h1, bool d1, string filename_pub, string filename_priv, string a_dir) {
+CryptoClient::CryptoClient(int p1, string h1, bool d1, string filename_pub, string filename_priv, string a_dir, string mf) {
 	port = p1;
 	host = h1;
 	debug = d1;
+	mac_filename = mf;
 	pub_key = read_keyfile(filename_pub);
   	priv_key = read_keyfile(filename_priv);
   	accounts_dir = a_dir;
@@ -91,6 +91,8 @@ void CryptoClient::start_session() {
 		server_pub_key = (string)buf;
 		cout << "Secure Connection Established." << endl;
 		send(server, pub_key.c_str(), pub_key.size(), 0);
+		string my_mac = make_mac(mac_filename);
+		send(server, my_mac.c_str(), my_mac.size(), 0);
 		nread = recv(server, buf, ENC_LEN, 0);
 		if(nread <= 0) {
 			cerr << "socket closed by server." << endl;

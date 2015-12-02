@@ -24,6 +24,7 @@ int main(int argc, char ** argv) {
 	string priv_key = "keys/private_client.pem";
 	string pub_key = "keys/public_client.pem";
 	string accounts_dir = "./accounts_atm/";
+	string mac_key = "./client.mac_key";
 	int c;
 	while ((c = getopt(argc, argv, "dhT:a:")) != -1) {
 		switch (c) {
@@ -45,17 +46,21 @@ int main(int argc, char ** argv) {
 		case 'a':
 			accounts_dir = optarg;
 			break;
+		case 'm':
+			mac_key = optarg;
+			break;
 		}
 	}
-	CryptoClient client = CryptoClient(port, host, debug, pub_key, priv_key, accounts_dir);
+	CryptoClient client = CryptoClient(port, host, debug, pub_key, priv_key, accounts_dir, mac_key);
 	client.start_session();
 	client.close_connection();
 }
 void print_usage(char * argv0) {
-	cout << "usage: " << argv0 << " <port> [-d] [-h] [-T hostname] [-k private key] [-K public key] [-a accounts]" << endl;
+	cout << "usage: " << argv0 << " <port> [-d] [-h] [-T hostname] [-k private key] [-K public key] [-a accounts] [-m mac_key]" << endl;
 	cout << "\t port port to connect to (REQUIRED)" << endl;
 	cout << "\t-h help (show this menu)" << endl;
 	cout << "\t-d Debug flag" << endl;
 	cout << "\t-T hostname to connect to (DEFAULT: 'localhost')" << endl;
 	cout << "\t-a account directory for atm (DEFAULT: ./accounts_atm/" << endl;
+	cout << "\t-m mac_key the mac key file (DEFAULT: client.mac_key)" << endl;
 }

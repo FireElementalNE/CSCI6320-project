@@ -12,6 +12,8 @@ extern const int RAND_PAD_LEN;
 extern const int MAX_FILENAME_LEN;
 extern const int MAX_PORT_LEN;
 extern const int SOCKET_TIMEOUT;
+extern const int MAC_MSG_LEN;
+extern const std::string MAC_MSG_REGEX;
 extern const std::string ACT_FNAME_REGEX;
 extern const std::string OK_REGEX_STR;
 extern const std::string FAIL_REGEX_STR;

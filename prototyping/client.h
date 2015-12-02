@@ -6,7 +6,6 @@
 #include <arpa/inet.h>
 #include <openssl/rsa.h>
 using namespace std;
-// https://github.com/zappala/socket-programming-examples-c
 class CryptoClient {
 private: 
 	int port;
@@ -22,9 +21,10 @@ private:
 	void get_public_key();
 	bool init_connection();
 public:
+	string mac_filename;
 	bool debug;
 	void start_session();
-	CryptoClient(int p1, string h1, bool d1, string filename_pub, string filename_priv, string a_dir);
+	CryptoClient(int p1, string h1, bool d1, string filename_pub, string filename_priv, string a_dir, string mf);
 	void close_connection();
 };
 #endif /* CLIENT_H */

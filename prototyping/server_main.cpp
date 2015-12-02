@@ -24,6 +24,7 @@ int main(int argc, char ** argv) {
 	string priv_key = "keys/private_server.pem";
 	string pub_key = "keys/public_server.pem";
 	string accounts_dir = "./accounts_bank";
+	string mac_keys = "./mac_keys.trusted";
 	int c;
 	while ((c = getopt(argc, argv, "dht:k:K:a:")) != -1) {
 		switch (c) {
@@ -46,13 +47,16 @@ int main(int argc, char ** argv) {
 			case 'a':
 				accounts_dir = optarg;
 				break;
+			case 'm':
+				accounts_dir = optarg;
+				break;
 		}
 	}
-	CryptoServer server = CryptoServer(port, host, debug, pub_key, priv_key, accounts_dir);
+	CryptoServer server = CryptoServer(port, host, debug, pub_key, priv_key, accounts_dir, mac_keys);
 	server.start_server();
 }
 void print_usage(char * argv0) {
-  cout << "usage: " << argv0 << " <port> [-d] [-h] [-H hostname] [-k private key] [-K public key] [-a accounts_dir]" << endl;
+  cout << "usage: " << argv0 << " <port> [-d] [-h] [-H hostname] [-k private key] [-K public key] [-a accounts_dir] [-m mac_keys]" << endl;
   cout << "\t <port> the port to listen on (REQUIRED)" << endl;
   cout << "\t-h help (show this menu)" << endl;
   cout << "\t-d Debug flag" << endl;
@@ -60,4 +64,5 @@ void print_usage(char * argv0) {
   cout << "\t-k private key file (DEFAULT: keys/private_server.pem)" << endl;
   cout << "\t-K public key file (DEFAULT: keys/public_server.pem)" << endl;
   cout << "\t-a accounts directory (DEFAULT: ./accounts)" << endl;
+  cout << "\t-m mac_keys the mac key file (DEFAULT: mac_keys.trusted)" << endl;
 }

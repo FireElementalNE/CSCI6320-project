@@ -9,6 +9,8 @@
 #include <dirent.h>
 #include <regex>
 #include <sys/stat.h>
+#include <vector>
+#include "crypto.h"
 #include "constants.h"
 using namespace std;
 char * str_to_char_ptr_safe(string s, int max_len) {
@@ -32,7 +34,7 @@ string read_keyfile(string filename) {
     ifstream file;
     file.open(filename.c_str());
     if(!file.is_open()) {
-        cerr << "could not open key file \'" << filename << "\' " << endl;
+        cerr << "could not open key file \'" << filename << "\' " << "." << endl;
         exit(EXIT_FAILURE);
     }
     string str((istreambuf_iterator<char>(file)), istreambuf_iterator<char>());
@@ -82,7 +84,7 @@ bool check_pin(string act, string pin, string a_dir) {
     ifstream file;
     file.open(f_name);
     if(!file.is_open()) {
-        cerr << "could not open file " << f_name << endl;
+        cerr << "could not open file " << f_name << "." << endl;
         return false;
     }
     string p_str;
@@ -96,4 +98,47 @@ bool check_port(int port) {
         return false;
     }
     return true;
+}
+string make_mac(string filename) {
+    string mac_key;
+    ifstream file;
+    file.open(filename);
+    if(!file.is_open()) {
+        cerr << "could not open file " <<  filename << "." << endl;
+        exit(EXIT_FAILURE);
+    }
+    file >> mac_key;
+    file.close();
+    string rand_msg = make_random_msg();
+    string final = rand_msg + ":" + get_mac(rand_msg, mac_key);
+    return final;
+}
+bool check_mac(string filename, string mac_msg) {
+    vector <string> mac_keys;
+    ifstream file;
+    file.open(filename);
+    if(!file.is_open()) {
+        cerr << "could not open file " <<  filename << "." << endl;
+        exit(EXIT_FAILURE);
+    }
+    string tmp_key;
+    while(file >> tmp_key) {
+        mac_keys.push_back(tmp_key);
+    }
+    for(unsigned int i = 0; i < mac_keys.size(); i++) {
+        regex mac_rgx(MAC_MSG_REGEX);
+        smatch mac_rgx_match;
+        regex_search(mac_msg, mac_rgx_match, mac_rgx);
+        if(mac_rgx_match.size() != 3) {
+            cerr << "your trusted mac file may be malformed." << endl;
+            continue;
+        }
+        string msg = mac_rgx_match[1];
+        string mac = mac_rgx_match[2];
+        string tmp_msg = get_mac(msg, mac_keys[i]);
+        if(tmp_msg == mac) {
+            return true;
+        }    
+    }
+    return false;
 }

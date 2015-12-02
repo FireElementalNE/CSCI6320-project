@@ -27,9 +27,10 @@ private:
 	string setup_keys();
 	Bank bank;
 public:
+	string mac_keys_filename;
 	void send_response(string response);
 	CryptoServer() {}
-	CryptoServer(int p1, string h1, bool d1, string filename_pub, string filename_priv, string accounts_filename);
+	CryptoServer(int p1, string h1, bool d1, string filename_pub, string filename_priv, string accounts_dir, string mcf);
 	bool start_server();
 };
 #endif /* SERVER_H */

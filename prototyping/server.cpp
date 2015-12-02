@@ -11,7 +11,7 @@
 #include "bank.h"
 #include "constants.h"
 using namespace std;
-CryptoServer::CryptoServer(int p1, string h1, bool d1, string filename_pub, string filename_priv, string accounts_dir) {
+CryptoServer::CryptoServer(int p1, string h1, bool d1, string filename_pub, string filename_priv, string accounts_dir, string mcf) {
 	port = p1;
 	host = h1;
 	debug = d1;
@@ -21,6 +21,7 @@ CryptoServer::CryptoServer(int p1, string h1, bool d1, string filename_pub, stri
   pub_key = read_keyfile(filename_pub);
   priv_key = read_keyfile(filename_priv);
   bank = Bank(accounts_dir);
+  mac_keys_filename = mcf;
 }
 bool CryptoServer::setup_connection() {
 	if(debug) {
@@ -130,6 +131,26 @@ void CryptoServer::process_connection(int sock) {
       }
       clinet_pub_key = (string)buf_key;
       cout << "server: secure connection established." << endl;
+      memset(buf, 0, BUF_LEN);
+      nread = recv(sock, buf, BUF_LEN, 0);
+      if(nread == 0) {
+        cout << "server: got a read length of 0, closing socket" << endl;
+        close(sock);
+        return;
+      }
+      else if(nread < 0) {
+        cerr << "server: idle too long, client timed out" << endl;
+        close(sock);
+        return;
+      }
+      string mac_str = string(buf);
+      bool mac_check = check_mac(mac_keys_filename, mac_str);
+      if(!mac_check) {
+        cerr << "server: mac check failed." << endl;
+        close(sock);
+        return;
+      }
+      cout << "server: mac check passed." << endl;
       char * ok_enc = new char[ENC_LEN];
       char * fail_enc = new char[ENC_LEN];
       char * success_enc = new char[ENC_LEN];

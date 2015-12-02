@@ -5,3 +5,10 @@ http://hayageek.com/rsa-encryption-decryption-openssl-c/
 https://en.wikipedia.org/wiki/Message_authentication_code
 https://www.openssl.org/docs/manmaster/crypto/hmac.html
 http://stackoverflow.com/questions/13274786/how-to-share-memory-between-process-fork
+http://askubuntu.com/questions/428198/getting-installing-gcc-g-4-9-on-ubuntu
+
+
+dependencies
+----------------
+g++ > v4.9
+libssl-dev

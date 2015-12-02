@@ -10,4 +10,6 @@ extern bool file_exists(const std::string& file);
 extern std::vector <std::string> get_account_names(std::string account_dir);
 extern bool check_pin(std::string a_dir, std::string act, std::string pin);
 extern bool check_port(int port);
+extern bool check_mac(std::string filename, std::string mac_msg);
+extern std::string make_mac(std::string filename);
 #endif /* GENFUNC_H */
