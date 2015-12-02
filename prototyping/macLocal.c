@@ -24,6 +24,7 @@ int main(int argc, char *argv[])
 {
   const char keyString[]  = "455554";
   const unsigned char testMessage[] = "Hello world!";
+
  //Note! Digest is the mac, actual length of the MAC is placed in md_len (named rc in this code), do not use strlen
   //  printMac(testMessage,keyString,0);
   // printMac((unsigned char *)"This is a message...",keyString,0);
