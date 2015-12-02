@@ -75,15 +75,15 @@ void CryptoClient::start_session() {
 			cerr << "pin size incorrect." << endl;
 			continue;
 		}
-		/*if(!is_account_unlocked(CLIENT_LOCKOUT_FILE, act_str)) {
+		if(!is_account_unlocked(CLIENT_LOCKOUT_FILE, act_str)) {
 			cerr << "account locked. see you local bank." << endl;
 			continue;
-		}*/
+		}
 		bool pin_test = check_pin(act_str, pin_str, accounts_dir);
-		/*if(!pin_test) {
+		if(!pin_test) {
 			cerr << "Incorrect PIN" << endl;
 			continue;
-		}*/
+		}
 		bool test = init_connection();
 		if(!test) {
 			cerr << "Cannot connect to Bank." << endl;

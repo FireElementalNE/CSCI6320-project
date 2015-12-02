@@ -85,7 +85,7 @@ void print_usage(char * argv0) {
   cout << "\t-H hostname to of sever to (DEFAULT: 'localhost')" << endl;
   cout << "\t-k private key file (DEFAULT: keys/private_server.pem)" << endl;
   cout << "\t-K public key file (DEFAULT: keys/public_server.pem)" << endl;
-  cout << "\t-a accounts directory (DEFAULT: ./accounts)" << endl;
+  cout << "\t-a accounts directory (DEFAULT: ./accounts_bank)" << endl;
   cout << "\t-m mac_keys the  trusted mac keys file (DEFAULT: mac_keys_server.trusted)" << endl;
   cout << "\t-M mac_key the my mac key file (DEFAULT: server.mac_key)" << endl;
 }

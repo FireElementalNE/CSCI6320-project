@@ -66,7 +66,7 @@ void print_usage(char * argv0) {
 	cout << "\t-h help (show this menu)" << endl;
 	cout << "\t-d Debug flag" << endl;
 	cout << "\t-T hostname to connect to (DEFAULT: 'localhost')" << endl;
-	cout << "\t-a account directory for atm (DEFAULT: ./accounts_atm/" << endl;
+	cout << "\t-a account directory for atm (DEFAULT: ./accounts_atm/)" << endl;
 	cout << "\t-M mac_key the mac key file (DEFAULT: client.mac_key)" << endl;
 	cout << "\t-m mac_keys mac_keys the  trusted mac keys file (DEFAULT: mac_keys_client.trusted)" << endl;
 }
