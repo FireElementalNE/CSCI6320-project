@@ -1,4 +1,4 @@
-CC=g++
+CC=g++-4.9
 CFLAGS=-g -Wall -std=c++11
 CRYPTO_CFLAGS=-lssl -lcrypto 
 OBJ=server.o client.o crypto.o bank.o gen_functions.o account.o constants.o

@@ -12,4 +12,5 @@ extern bool check_pin(std::string a_dir, std::string act, std::string pin);
 extern bool check_port(int port);
 extern bool check_mac(std::string filename, std::string mac_msg);
 extern std::string make_mac(std::string filename);
+extern bool is_account_unlocked(std::string filename, std::string account_name);
 #endif /* GENFUNC_H */

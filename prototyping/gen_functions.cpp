@@ -10,8 +10,10 @@
 #include <regex>
 #include <sys/stat.h>
 #include <vector>
+#include <mutex>
 #include "crypto.h"
 #include "constants.h"
+
 using namespace std;
 char * str_to_char_ptr_safe(string s, int max_len) {
     if(s.size() > (unsigned int)max_len) {
@@ -141,4 +143,62 @@ bool check_mac(string filename, string mac_msg) {
         }    
     }
     return false;
+}
+bool is_account_unlocked(string filename, string account_name) {
+    vector <pair <string, int> > lib;
+    ifstream in_file;
+    ofstream out_file;
+    static mutex MUTEX;
+    lock_guard<mutex> lock(MUTEX);
+    in_file.open(filename);
+    if(!in_file.is_open() && file_exists(filename)) {
+        cerr << "could not open file " << filename << "." << endl;
+        return false;
+    }
+    if(!file_exists(filename)) {
+        in_file.close();
+    }
+    else {
+        string account;
+        string lock_num_str;
+        while(in_file >> account >> lock_num_str) {
+            int lock_num = atoi(lock_num_str.c_str());
+            if(account_name == account) {
+                if(lock_num >= LOCKOUT_ATTEMPTS) {
+                    return false;
+                }
+                else {
+                    lock_num++;
+                }
+            }
+            pair <string, int> tmp = make_pair(account, lock_num);
+            lib.push_back(tmp);
+        }
+        in_file.close();
+        remove(filename.c_str());
+    }
+    out_file.open(filename);
+    if(!out_file.is_open()) {
+        cerr << "could not open file " << filename << "." << endl;
+        return false;
+    }
+    if(file_exists(filename)) {
+        bool found_account = false;
+        for(unsigned int i = 0; i < lib.size(); i++) {
+            if(lib[i].first == account_name) {
+                found_account = true;
+            }
+            out_file << lib[i].first << " " << lib[i].second << endl;
+        }
+        if(!found_account) {
+            out_file << account_name << " " << 1 << endl;
+        }
+        out_file.close();
+        return true;
+    }
+    else {
+        out_file << account_name << " " << 1 << endl;
+        out_file.close();
+        return true;
+    }
 }

@@ -228,6 +228,11 @@ void CryptoServer::process_connection(int sock) {
       string act = login_regex_result[1];
       int pin = atoi(str_to_char_ptr_safe(login_regex_result[2], MAX_PIN_SIZE));
       cout << "server: Attempting login...." << endl;
+      if(!is_account_unlocked(SERVER_LOCKOUT_FILE, act)) {
+        cerr << "server: account \'" << act << "\' locked. too many login attempts" << endl;
+        close(sock);
+        break;
+      }
       bool login_success = bank.lock_act(act, pin);
       bool do_exit = false;
       if(!login_success) {

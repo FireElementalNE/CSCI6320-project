@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <iostream>
 #include <stdlib.h>
+#include <regex>
 #include "client.h"
 #include "gen_functions.h"
 #include "crypto.h"
@@ -70,11 +71,19 @@ void CryptoClient::start_session() {
 		cout << "PIN> ";
 		fflush(stdout);
 		getline(cin, pin_str);
-		bool pin_test = check_pin(act_str, pin_str, accounts_dir);
-		if(!pin_test) {
-			cerr << "Incorrect PIN" << endl;
+		if(pin_str.size() > (unsigned int)MAX_PIN_SIZE || pin_str.size() < (unsigned int)MIN_PIN_SIZE) {
+			cerr << "pin size incorrect." << endl;
 			continue;
 		}
+		/*if(!is_account_unlocked(CLIENT_LOCKOUT_FILE, act_str)) {
+			cerr << "account locked. see you local bank." << endl;
+			continue;
+		}*/
+		bool pin_test = check_pin(act_str, pin_str, accounts_dir);
+		/*if(!pin_test) {
+			cerr << "Incorrect PIN" << endl;
+			continue;
+		}*/
 		bool test = init_connection();
 		if(!test) {
 			cerr << "Cannot connect to Bank." << endl;
