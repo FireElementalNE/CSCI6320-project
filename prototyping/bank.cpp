@@ -2,7 +2,7 @@
 #include <vector>
 #include <fstream>
 #include <stdlib.h>
-#include <string.h>
+#include <cstring>
 #include <regex>
 #include "account.h"
 #include "server.h"

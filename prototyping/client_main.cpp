@@ -1,5 +1,6 @@
 #include <iostream>
 #include <unistd.h>
+#include <cstring>
 #include "client.h"
 #include "gen_functions.h"
 #include "constants.h"
